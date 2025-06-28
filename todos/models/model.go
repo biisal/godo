@@ -8,10 +8,10 @@ import (
 )
 
 type Todo struct {
-	ID          int
-	Title       string
-	Description string
-	Done        bool
+	ID              int    `json:"id"`
+	TitleText       string `json:"title"`
+	DescriptionText string `json:"description"`
+	Done            bool   `json:"done"`
 }
 
 type Mode struct {
@@ -36,3 +36,7 @@ type TodoModel struct {
 	Choices       []Mode
 	SelectedIndex int
 }
+
+func (i Todo) Title() string       { return i.TitleText }
+func (i Todo) Description() string { return i.DescriptionText }
+func (i Todo) FilterValue() string { return i.TitleText }

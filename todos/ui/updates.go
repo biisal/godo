@@ -2,7 +2,9 @@ package ui
 
 import (
 	"github.com/biisal/todo-cli/todos/actions"
+	"github.com/biisal/todo-cli/todos/models"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -41,7 +43,12 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		switch m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
 		case TodoListMode.Value:
 			switch key {
-			case "up", "down", "pgup", "pgdown", "home", "end", "enter":
+			case "enter":
+				selected := m.TodoModel.ListModel.List.SelectedItem()
+				if selected != nil {
+					// id := selected.(models.Todo).ID
+				}
+			case "up", "down", "pgup", "pgdown", "home", "end":
 				listModel, cmd := m.TodoModel.ListModel.List.Update(msg)
 				m.TodoModel.ListModel.List = listModel
 				m.updateDescriptionContent()
@@ -93,7 +100,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 func (m *TeaModel) updateDescriptionContent() {
 	var rightContent = "Description:\n\n"
 	if selectedItem := m.TodoModel.ListModel.List.SelectedItem(); selectedItem != nil {
-		if i, ok := selectedItem.(item); ok {
+		if i, ok := selectedItem.(models.Todo); ok {
 			desc := i.Description()
 			wrappedStyle := lipgloss.NewStyle().
 				Width(m.TodoModel.ListModel.DescViewport.Width)
@@ -108,26 +115,26 @@ func (m *TeaModel) RefreshList() {
 	todos, _ := actions.GetTodos(true)
 	items := []list.Item{}
 	for _, todo := range todos {
-		items = append(items, item{title: todo.Title, desc: todo.Description})
+		items = append(items, todo)
 	}
 	if m.TodoModel.ListModel.List.Height() == 0 {
 		h, _ := docStyle.GetFrameSize()
 		todoList := list.New(items, list.NewDefaultDelegate(), 0, h*3)
+		sp := spinner.New()
 
 		todoList.SetShowHelp(false)
+		todoList.ShowStatusBar()
 		todoList.Title = "TODO LIST"
 		todoList.Styles.Title = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#00FFFF")).
 			Bold(true).
 			Underline(true)
 		todoList.SetShowPagination(true)
+		todoList.SetSpinner(sp.Spinner)
 		m.TodoModel.ListModel.List = todoList
-
+		m.TodoModel.ListModel.List.ToggleSpinner()
 		listHeight := todoList.Height()
 		viewportHeight := listHeight - 4 // Account for border and padding
-		if viewportHeight < 1 {
-			viewportHeight = 1
-		}
 		vp := viewport.New(m.Width/2-9, viewportHeight)
 		m.TodoModel.ListModel.DescViewport = vp
 

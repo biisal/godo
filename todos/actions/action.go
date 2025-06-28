@@ -64,10 +64,10 @@ func AddTodo(title, description string) ([]models.Todo, error) {
 		return nil, err
 	}
 	todos = append(todos, models.Todo{
-		ID:          len(todos) + 1,
-		Title:       title,
-		Description: description,
-		Done:        false,
+		ID:              len(todos) + 1,
+		TitleText:       title,
+		DescriptionText: description,
+		Done:            false,
 	})
 	WriteTodos(todos)
 	return todos, err
@@ -89,10 +89,19 @@ func ModifyTodo(id int, title, description string) {
 		return
 	}
 	todos[id] = models.Todo{
-		ID:          id,
-		Title:       title,
-		Description: description,
-		Done:        false,
+		ID:              id,
+		TitleText:       title,
+		DescriptionText: description,
+		Done:            false,
 	}
+	WriteTodos(todos)
+}
+
+func ToggleDone(id int) {
+	todos, err := GetTodos()
+	if err != nil {
+		return
+	}
+	todos[id].Done = !todos[id].Done
 	WriteTodos(todos)
 }

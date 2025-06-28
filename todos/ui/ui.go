@@ -23,12 +23,9 @@ var (
 )
 
 type item struct {
+	id          int
 	title, desc string
 }
-
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.desc }
-func (i item) FilterValue() string { return i.title }
 
 type TeaModel struct {
 	Choices       []models.Mode
@@ -93,7 +90,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if listModel.List.Height() > 0 {
 			listHeight := listModel.List.Height()
 			listModel.DescViewport.Height = listHeight
-			listModel.DescViewport.Width = m.Width/2 - 9 // Account for border and margin
+			listModel.DescViewport.Width = m.Width/2 - 9
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -123,11 +120,11 @@ func (m *TeaModel) View() string {
 
 		case TodoListMode.Value:
 			listModel := m.TodoModel.ListModel
-			listModel.List.SetWidth(m.Width / 2)
+			listModel.List.SetWidth(m.Width/2 - 5)
 
 			var rightContent = "Description:\n"
 			if selectedItem := listModel.List.SelectedItem(); selectedItem != nil {
-				if i, ok := selectedItem.(item); ok {
+				if i, ok := selectedItem.(models.Todo); ok {
 					rightContent += i.Description()
 				}
 			}
@@ -149,7 +146,7 @@ func (m *TeaModel) View() string {
 				BorderForeground(lipgloss.Color("#89b4fa"))
 
 			rightSide := rightStyle.Render(m.TodoModel.ListModel.DescViewport.View())
-			view := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(listModel.List.View()), rightSide)
+			view := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Render(listModel.List.View()), rightSide)
 
 			s += view + "\n" + separator
 		}
