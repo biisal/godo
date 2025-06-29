@@ -37,6 +37,7 @@ type TeaModel struct {
 func getTitleInput(placeholder string) textinput.Model {
 	input := textinput.New()
 	input.Placeholder = placeholder
+	input.Prompt = "Title > "
 	input.Focus()
 	return input
 }
@@ -51,7 +52,7 @@ func getDescInput(placeholder string) textarea.Model {
 
 func InitialModel() *TeaModel {
 	idInput := textinput.New()
-	idInput.Prompt = "ID >"
+	idInput.Prompt = "ID > "
 
 	teaModel := TeaModel{
 		SelectedIndex: 0,

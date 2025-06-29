@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -14,6 +15,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+var WrongTypeIdError = errors.New("ID Should be a number")
 
 func SetUpDefalutKeys(key string, m *TeaModel) {
 	switch key {
@@ -47,7 +50,7 @@ func SetUpFormKey(key string, model *models.TodoForm, m *TeaModel, cmds *[]tea.C
 	case "ctrl+s":
 		switch m.TodoModel.SelectedIndex {
 		case 1:
-			err := m.Add()
+			_, err := actions.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
 			if err != nil {
 				m.ShowError(err, cmds)
 				return
@@ -57,7 +60,12 @@ func SetUpFormKey(key string, model *models.TodoForm, m *TeaModel, cmds *[]tea.C
 			model.TitleInput.Reset()
 			model.DescInput.Reset()
 		case 2:
-			err := m.Modify()
+			id, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
+			if err != nil {
+				m.ShowError(WrongTypeIdError, cmds)
+				return
+			}
+			_, err = actions.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
 			if err != nil {
 				m.ShowError(err, cmds)
 				return
@@ -95,7 +103,7 @@ func SetUpFormKey(key string, model *models.TodoForm, m *TeaModel, cmds *[]tea.C
 
 }
 
-func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg) (tea.Model, *tea.Cmd) {
+func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (tea.Model, *tea.Cmd) {
 	switch key {
 	case "enter":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
@@ -112,6 +120,16 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg) (tea.Model, *tea.Cmd
 			m.TodoModel.EditModel.IdInput.SetValue(fmt.Sprintf("%d", todo.ID))
 			m.TodoModel.EditModel.TitleInput.SetValue(todo.Title())
 			m.TodoModel.EditModel.DescInput.SetValue(todo.Description())
+		}
+	case "delete":
+		selected := m.TodoModel.ListModel.List.SelectedItem()
+		if selected != nil {
+			_, err := actions.DeleteTodo(selected.(models.Todo).ID)
+			if err != nil {
+				m.ShowError(err, nil)
+				return m, nil
+			}
+			m.RefreshList()
 		}
 	case "up", "down", "pgup", "pgdown", "home", "end":
 		listModel, cmd := m.TodoModel.ListModel.List.Update(msg)
@@ -137,7 +155,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 	case TodoMode.Value:
 		switch m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
 		case TodoListMode.Value:
-			m, c := SetyUpListKey(key, m, msg)
+			m, c := SetyUpListKey(key, m, msg, &cmds)
 			if c != nil {
 				return m, *c
 			}
@@ -236,20 +254,6 @@ func (m *TeaModel) RefreshList() {
 	}
 	m.TodoModel.ListModel.List.NewStatusMessage(status)
 
-}
-
-func (m TeaModel) Add() error {
-	_, err := actions.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
-	return err
-}
-
-func (m TeaModel) Modify() error {
-	idInt, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
-	if err != nil {
-		return fmt.Errorf("invalid id, Make sure id is a number")
-	}
-	_, err = actions.ModifyTodo(int(idInt), m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
-	return err
 }
 
 type clearErrorMsg struct{}

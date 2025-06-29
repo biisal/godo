@@ -2,17 +2,20 @@ package actions
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/biisal/todo-cli/todos/models"
 )
 
-type Action struct {
-}
+var (
+	ErrorEmpty     = errors.New("Title or Description can't be empty")
+	ErrorInvalidId = errors.New("Invalid ID")
+)
 
 const (
 	TodoFilePath = "./todos.json"
@@ -52,6 +55,9 @@ func WriteTodos(todos []models.Todo) error {
 	if err != nil {
 		return err
 	}
+	for i := range todos {
+		todos[i].ID = i
+	}
 	defer file.Close()
 	return json.NewEncoder(file).Encode(todos)
 }
@@ -59,7 +65,7 @@ func WriteTodos(todos []models.Todo) error {
 func AddTodo(title, description string) ([]models.Todo, error) {
 	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
 	if title == "" || description == "" {
-		return nil, fmt.Errorf("title and description cannot be empty")
+		return nil, ErrorEmpty
 	}
 	todos, err := GetTodos()
 	if err != nil {
@@ -70,9 +76,6 @@ func AddTodo(title, description string) ([]models.Todo, error) {
 		DescriptionText: description,
 		Done:            false,
 	}}, todos...)
-	for i := range todos {
-		todos[i].ID = i
-	}
 	WriteTodos(todos)
 	return todos, err
 }
@@ -82,7 +85,10 @@ func DeleteTodo(id int) ([]models.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	todos = append(todos[:id-1], todos[id:]...)
+	if id < 0 || id >= len(todos) {
+		return nil, ErrorInvalidId
+	}
+	todos = slices.Delete(todos, id, id+1)
 	WriteTodos(todos)
 	return todos, err
 }
@@ -90,14 +96,14 @@ func DeleteTodo(id int) ([]models.Todo, error) {
 func ModifyTodo(id int, title, description string) ([]models.Todo, error) {
 	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
 	if title == "" || description == "" {
-		return nil, fmt.Errorf("title and description cannot be empty")
+		return nil, ErrorEmpty
 	}
 	todos, err := GetTodos()
 	if err != nil {
 		return nil, err
 	}
 	if id < 0 || id >= len(todos) {
-		return nil, fmt.Errorf("invalid id")
+		return nil, ErrorInvalidId
 	}
 	todos[id] = models.Todo{
 		ID:              id,
