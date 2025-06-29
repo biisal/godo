@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 
 	"github.com/biisal/todo-cli/todos/models"
 )
@@ -17,7 +16,7 @@ const (
 	TodoFilePath = "./todos.json"
 )
 
-func GetTodos(reverse ...bool) ([]models.Todo, error) {
+func GetTodos() ([]models.Todo, error) {
 	path := TodoFilePath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		dir := filepath.Dir(path)
@@ -42,9 +41,6 @@ func GetTodos(reverse ...bool) ([]models.Todo, error) {
 		}
 		return nil, err
 	}
-	if len(reverse) > 0 && reverse[0] {
-		slices.Reverse(todos)
-	}
 	return todos, nil
 }
 
@@ -63,12 +59,14 @@ func AddTodo(title, description string) ([]models.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	todos = append(todos, models.Todo{
-		ID:              len(todos) + 1,
+	todos = append([]models.Todo{{
 		TitleText:       title,
 		DescriptionText: description,
 		Done:            false,
-	})
+	}}, todos...)
+	for i := range todos {
+		todos[i].ID = i
+	}
 	WriteTodos(todos)
 	return todos, err
 }
