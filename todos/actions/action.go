@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/biisal/todo-cli/todos/models"
+	"github.com/biisal/todo-cli/todos/models/todo"
 )
 
 var (
@@ -21,7 +21,7 @@ const (
 	TodoFilePath = "./todos.json"
 )
 
-func GetTodos() ([]models.Todo, error) {
+func GetTodos() ([]todo.Todo, error) {
 	path := TodoFilePath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		dir := filepath.Dir(path)
@@ -38,18 +38,18 @@ func GetTodos() ([]models.Todo, error) {
 	}
 	defer file.Close()
 
-	var todos []models.Todo
+	var todos []todo.Todo
 	err = json.NewDecoder(file).Decode(&todos)
 	if err != nil {
 		if err == io.EOF {
-			return []models.Todo{}, nil
+			return []todo.Todo{}, nil
 		}
 		return nil, err
 	}
 	return todos, nil
 }
 
-func WriteTodos(todos []models.Todo) error {
+func WriteTodos(todos []todo.Todo) error {
 	path := TodoFilePath
 	file, err := os.Create(path)
 	if err != nil {
@@ -62,7 +62,7 @@ func WriteTodos(todos []models.Todo) error {
 	return json.NewEncoder(file).Encode(todos)
 }
 
-func AddTodo(title, description string) ([]models.Todo, error) {
+func AddTodo(title, description string) ([]todo.Todo, error) {
 	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
 	if title == "" || description == "" {
 		return nil, ErrorEmpty
@@ -71,7 +71,7 @@ func AddTodo(title, description string) ([]models.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	todos = append([]models.Todo{{
+	todos = append([]todo.Todo{{
 		TitleText:       title,
 		DescriptionText: description,
 		Done:            false,
@@ -80,7 +80,7 @@ func AddTodo(title, description string) ([]models.Todo, error) {
 	return todos, err
 }
 
-func DeleteTodo(id int) ([]models.Todo, error) {
+func DeleteTodo(id int) ([]todo.Todo, error) {
 	todos, err := GetTodos()
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func DeleteTodo(id int) ([]models.Todo, error) {
 	return todos, err
 }
 
-func ModifyTodo(id int, title, description string) ([]models.Todo, error) {
+func ModifyTodo(id int, title, description string) ([]todo.Todo, error) {
 	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
 	if title == "" || description == "" {
 		return nil, ErrorEmpty
@@ -105,7 +105,7 @@ func ModifyTodo(id int, title, description string) ([]models.Todo, error) {
 	if id < 0 || id >= len(todos) {
 		return nil, ErrorInvalidId
 	}
-	todos[id] = models.Todo{
+	todos[id] = todo.Todo{
 		ID:              id,
 		TitleText:       title,
 		DescriptionText: description,

@@ -1,12 +1,12 @@
 package setup
 
 import (
-	"github.com/biisal/todo-cli/todos/models"
+	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
 
-func SetUpChoice(choices []models.Mode, matchIndex int, helpText string) string {
+func SetUpChoice(choices []todo.Mode, matchIndex int, helpText string) string {
 	var s string
 	for i, choice := range choices {
 		if i == matchIndex {

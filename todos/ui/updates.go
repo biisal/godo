@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/biisal/todo-cli/todos/actions"
-	"github.com/biisal/todo-cli/todos/models"
+	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -39,7 +39,7 @@ func SetUpDefalutKeys(key string, m *TeaModel) {
 	}
 }
 
-func SetUpFormKey(key string, model *models.TodoForm, m *TeaModel, cmds *[]tea.Cmd, msg tea.Msg) {
+func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd, msg tea.Msg) {
 	switch key {
 	case "tab":
 		if model.Focus < model.InputCount-1 {
@@ -108,14 +108,14 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 	case "enter":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
-			id := selected.(models.Todo).ID
+			id := selected.(todo.Todo).ID
 			actions.ToggleDone(id)
 			m.RefreshList()
 		}
 	case "ctrl+e":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
-			todo := selected.(models.Todo)
+			todo := selected.(todo.Todo)
 			m.TodoModel.SelectedIndex = 2
 			m.TodoModel.EditModel.IdInput.SetValue(fmt.Sprintf("%d", todo.ID))
 			m.TodoModel.EditModel.TitleInput.SetValue(todo.Title())
@@ -124,7 +124,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 	case "delete":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
-			_, err := actions.DeleteTodo(selected.(models.Todo).ID)
+			_, err := actions.DeleteTodo(selected.(todo.Todo).ID)
 			if err != nil {
 				m.ShowError(err, nil)
 				return m, nil
@@ -189,7 +189,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 func (m *TeaModel) updateDescriptionContent() {
 	var rightContent = "Description:\n\n"
 	if selectedItem := m.TodoModel.ListModel.List.SelectedItem(); selectedItem != nil {
-		if i, ok := selectedItem.(models.Todo); ok {
+		if i, ok := selectedItem.(todo.Todo); ok {
 			desc := i.Description()
 			wrappedStyle := lipgloss.NewStyle().
 				Width(m.TodoModel.ListModel.DescViewport.Width)
@@ -214,7 +214,7 @@ func (m *TeaModel) RefreshList() {
 	}
 	if m.TodoModel.ListModel.List.Height() == 0 {
 		h, _ := styles.DocStyle.GetFrameSize()
-		todoList := list.New(items, models.TodoListDelegate{}, 0, h*3)
+		todoList := list.New(items, todo.TodoListDelegate{}, 0, h*3)
 		sp := spinner.New()
 		todoList.SetShowHelp(false)
 		todoList.Title = "TODO LIST"
