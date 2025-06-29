@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/biisal/todo-cli/todos/actions"
@@ -44,35 +45,51 @@ func SetUpFormKey(key string, model *models.TodoForm, m *TeaModel, cmds *[]tea.C
 			model.Focus = 0
 		}
 	case "ctrl+s":
-		if err := m.Add(); err == nil {
+		switch m.TodoModel.SelectedIndex {
+		case 1:
+			err := m.Add()
+			if err != nil {
+				m.ShowError(err, cmds)
+				return
+			}
 			m.RefreshList()
 			m.TodoModel.SelectedIndex = 0
 			model.TitleInput.Reset()
 			model.DescInput.Reset()
-			m.ShowError(fmt.Errorf("This is a test"), cmds)
+		case 2:
+			err := m.Modify()
+			if err != nil {
+				m.ShowError(err, cmds)
+				return
+			}
+			m.RefreshList()
+			m.TodoModel.SelectedIndex = 0
+			model.TitleInput.Reset()
+			model.DescInput.Reset()
+			model.IdInput.Reset()
 		}
 	}
 	switch model.Focus {
 	case 0:
 		model.TitleInput.Focus()
 		model.DescInput.Blur()
-		model.ID.Blur()
+		model.IdInput.Blur()
 		input, cmd := model.TitleInput.Update(msg)
 		model.TitleInput = input
 		*cmds = append(*cmds, cmd)
 	case 1:
 		model.DescInput.Focus()
 		model.TitleInput.Blur()
-		model.ID.Blur()
+		model.IdInput.Blur()
 		input, cmd := model.DescInput.Update(msg)
 		model.DescInput = input
 		*cmds = append(*cmds, cmd)
 	case 2:
-		model.ID.Focus()
+		model.IdInput.Focus()
 		model.DescInput.Blur()
 		model.TitleInput.Blur()
-		input, cmd := model.ID.Update(msg)
-		model.ID = input
+		input, cmd := model.IdInput.Update(msg)
+		model.IdInput = input
 		*cmds = append(*cmds, cmd)
 	}
 
@@ -92,7 +109,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg) (tea.Model, *tea.Cmd
 		if selected != nil {
 			todo := selected.(models.Todo)
 			m.TodoModel.SelectedIndex = 2
-			m.TodoModel.EditModel.ID.SetValue(fmt.Sprintf("%d", todo.ID))
+			m.TodoModel.EditModel.IdInput.SetValue(fmt.Sprintf("%d", todo.ID))
 			m.TodoModel.EditModel.TitleInput.SetValue(todo.Title())
 			m.TodoModel.EditModel.DescInput.SetValue(todo.Description())
 		}
@@ -142,23 +159,13 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 
 	editModel.TitleInput.Width = titleWidth
 	editModel.DescInput.SetWidth(descWidth)
-	editModel.ID.Width = idWidth
+	editModel.IdInput.Width = idWidth
 	if listModel.List.Height() > 0 {
 		listHeight := listModel.List.Height()
 		listModel.DescViewport.Height = listHeight
 		listModel.DescViewport.Width = m.Width/2 - 9
 	}
 
-}
-
-type clearErrorMsg struct{}
-
-func (m *TeaModel) ShowError(err error, cmds *[]tea.Cmd) {
-	m.Error = err
-	*cmds = append(*cmds, func() tea.Msg {
-		time.Sleep(4 * time.Second)
-		return clearErrorMsg{}
-	})
 }
 
 func (m *TeaModel) updateDescriptionContent() {
@@ -234,4 +241,23 @@ func (m *TeaModel) RefreshList() {
 func (m TeaModel) Add() error {
 	_, err := actions.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
 	return err
+}
+
+func (m TeaModel) Modify() error {
+	idInt, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
+	if err != nil {
+		return fmt.Errorf("invalid id, Make sure id is a number")
+	}
+	_, err = actions.ModifyTodo(int(idInt), m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
+	return err
+}
+
+type clearErrorMsg struct{}
+
+func (m *TeaModel) ShowError(err error, cmds *[]tea.Cmd) {
+	m.Error = err
+	*cmds = append(*cmds, func() tea.Msg {
+		time.Sleep(4 * time.Second)
+		return clearErrorMsg{}
+	})
 }

@@ -51,6 +51,8 @@ func getDescInput(placeholder string) textarea.Model {
 
 func InitialModel() *TeaModel {
 	idInput := textinput.New()
+	idInput.Prompt = "ID >"
+
 	teaModel := TeaModel{
 		SelectedIndex: 0,
 		Choices:       []models.Mode{TodoMode, AiMode},
@@ -61,7 +63,7 @@ func InitialModel() *TeaModel {
 				InputCount: 2,
 			},
 			EditModel: models.TodoForm{
-				ID:         idInput,
+				IdInput:    idInput,
 				TitleInput: getTitleInput("Edit title"),
 				DescInput:  getDescInput("Edit description"),
 				InputCount: 3,
@@ -94,9 +96,8 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TeaModel) View() string {
-	var s string
-	s += "TODO CLI\n\n"
-	s += styles.FadeStyle.Render("alt+right/left ") + setup.SetUpChoice(m.Choices, m.SelectedIndex)
+	s := styles.TitleStyle.Render(styles.Logo)
+	s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "alt+right/left")
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
 		switch m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
@@ -141,13 +142,12 @@ func (m *TeaModel) View() string {
 
 			rightSide := rightStyle.Render(m.TodoModel.ListModel.DescViewport.View())
 			view := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Render(listModel.List.View()), rightSide)
-
 			s += view + "\n" + separator
 
 		case TodoEditMode.Value:
 			titleInput := m.TodoModel.EditModel.TitleInput
 			descInput := m.TodoModel.EditModel.DescInput
-			idInput := m.TodoModel.EditModel.ID
+			idInput := m.TodoModel.EditModel.IdInput
 			switch m.TodoModel.EditModel.Focus {
 			case 0:
 				s += styles.BoxStyle.Render(styles.FocusedStyle.Render(titleInput.View())) + "\n"
@@ -165,14 +165,14 @@ func (m *TeaModel) View() string {
 
 		}
 		s += "\n\n"
-		s += styles.FadeStyle.Render("ctrl+right/left ") + setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex)
+		s += setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex, "ctrl+right/left")
 
 	case AiMode.Value:
 		s += "AI MODE"
 	}
 
 	if m.Error != nil {
-		s += "\n\n" + styles.RedStyle.Render(m.Error.Error())
+		s += "\n\n" + styles.ErrorStyle.Render(m.Error.Error())
 	}
 	return s
 }

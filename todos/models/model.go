@@ -26,7 +26,7 @@ type Mode struct {
 }
 
 type TodoForm struct {
-	ID         textinput.Model
+	IdInput    textinput.Model
 	TitleInput textinput.Model
 	DescInput  textarea.Model
 	Focus      int

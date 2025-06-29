@@ -2,9 +2,11 @@ package actions
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/biisal/todo-cli/todos/models"
 )
@@ -55,6 +57,10 @@ func WriteTodos(todos []models.Todo) error {
 }
 
 func AddTodo(title, description string) ([]models.Todo, error) {
+	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
+	if title == "" || description == "" {
+		return nil, fmt.Errorf("title and description cannot be empty")
+	}
 	todos, err := GetTodos()
 	if err != nil {
 		return nil, err
@@ -81,10 +87,17 @@ func DeleteTodo(id int) ([]models.Todo, error) {
 	return todos, err
 }
 
-func ModifyTodo(id int, title, description string) {
+func ModifyTodo(id int, title, description string) ([]models.Todo, error) {
+	title, description = strings.TrimSpace(title), strings.TrimSpace(description)
+	if title == "" || description == "" {
+		return nil, fmt.Errorf("title and description cannot be empty")
+	}
 	todos, err := GetTodos()
 	if err != nil {
-		return
+		return nil, err
+	}
+	if id < 0 || id >= len(todos) {
+		return nil, fmt.Errorf("invalid id")
 	}
 	todos[id] = models.Todo{
 		ID:              id,
@@ -92,7 +105,10 @@ func ModifyTodo(id int, title, description string) {
 		DescriptionText: description,
 		Done:            false,
 	}
-	WriteTodos(todos)
+	if err = WriteTodos(todos); err != nil {
+		return nil, err
+	}
+	return todos, nil
 }
 
 func ToggleDone(id int) {
