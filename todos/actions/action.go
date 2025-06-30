@@ -1,14 +1,21 @@
 package actions
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/biisal/todo-cli/config"
+	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 )
 
@@ -47,6 +54,14 @@ func GetTodos() ([]todo.Todo, error) {
 		return nil, err
 	}
 	return todos, nil
+}
+
+func GetTodosCount() string {
+	todos, err := GetTodos()
+	if err != nil {
+		return "Not Found"
+	}
+	return "Total Todos: " + strconv.Itoa(len(todos))
 }
 
 func WriteTodos(todos []todo.Todo) error {
@@ -124,4 +139,117 @@ func ToggleDone(id int) {
 	}
 	todos[id].Done = !todos[id].Done
 	WriteTodos(todos)
+}
+
+type AiStreamMsg string
+type StreamDoneMsg struct{}
+
+func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	history = append([]agent.Message{
+		{
+			Role:    "system",
+			Content: "You are a very helpfull agent that can help me with my tasks",
+		},
+	}, history...)
+	url := "https://api.groq.com/openai/v1/chat/completions"
+	body := agent.AgentReq{
+		Messages:            history,
+		Model:               "llama-3.1-8b-instant",
+		Temperature:         1,
+		MaxCompletionTokens: 100,
+		TopP:                1,
+		Stream:              false,
+		Tools: []agent.Tool{
+			{
+				Type: "function",
+
+				Function: agent.FunctionReq{
+					Name:        "GetTodosCount",
+					Description: "Returns the number of todos",
+					Parameters: struct {
+						Type       string                        `json:"type"`
+						Properties map[string]agent.PropertyType `json:"properties"`
+						Required   []string                      `json:"required"`
+					}{
+						Type:       "object",
+						Properties: map[string]agent.PropertyType{}, // ✅ Empty map
+						Required:   []string{},
+					},
+				},
+			},
+		},
+		ToolChoice: "auto",
+	}
+
+	bodyJson, _ := json.Marshal(body)
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyJson))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+config.Cfg.GROQ_API_KEY)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var msgStruct agent.AgentRes
+	data, _ := io.ReadAll(resp.Body)
+	if err = json.Unmarshal(data, &msgStruct); err != nil {
+		return nil, err
+	}
+
+	return &msgStruct, nil
+}
+
+func AiResponse(history []agent.Message) ([]agent.Message, error) {
+	agentRes, err := aiAPICall(history)
+	if err != nil {
+		return nil, err
+	}
+	if len(agentRes.Choices) == 0 {
+		return history, nil
+	}
+	tools := agentRes.Choices[0].Message.ToolCalls
+	if len(tools) > 0 {
+		funcName := tools[0].Function.Name
+		if funcName == "GetTodosCount" {
+			result := GetTodosCount()
+
+			history = append(history,
+				agent.Message{
+					Role:       "tool",
+					Content:    result,
+					ToolCallId: tools[0].Id,
+					Name:       "GetTodosCount",
+				},
+			)
+			agentRes, err = aiAPICall(history)
+			if err != nil {
+				return nil, err
+			}
+			history = append(history, agentRes.Choices[0].Message)
+		}
+	} else {
+		history = append(history, agentRes.Choices[0].Message)
+	}
+	writeHistory(history)
+	return history, nil
+
+}
+
+func writeHistory(history []agent.Message) error {
+	file, err := os.OpenFile("history.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = json.NewEncoder(file).Encode(history)
+	if err != nil {
+		return err
+	}
+	return nil
 }

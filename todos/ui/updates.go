@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/biisal/todo-cli/todos/actions"
+	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
@@ -164,6 +165,28 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case TodoEditMode.Value:
 			SetUpFormKey(key, &m.TodoModel.EditModel, m, &cmds, msg)
 		}
+	case AgentMode.Value:
+		switch key {
+		case "enter":
+			msg := agent.Message{
+				Role:    agent.UserRole,
+				Content: m.AgentModel.PromptInput.Value(),
+			}
+			m.AgentModel.History = append(m.AgentModel.History, msg)
+			return m, tea.Cmd(func() tea.Msg {
+				history, err := actions.AiResponse(m.AgentModel.History)
+				if err == nil {
+					return agent.AgentResTeaMsg{
+						Error:   err,
+						History: history,
+					}
+				}
+				return nil
+			})
+		}
+		input, cmd := m.AgentModel.PromptInput.Update(msg)
+		m.AgentModel.PromptInput = input
+		cmds = append(cmds, cmd)
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -171,13 +194,15 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	m.Width = msg.Width
 	titleWidth, descWidth, idWidth := m.Width-60, m.Width-10, m.Width-70
-	addModel, listModel, editModel := &m.TodoModel.AddModel, &m.TodoModel.ListModel, &m.TodoModel.EditModel
+	addModel, listModel, editModel, agentModel := &m.TodoModel.AddModel, &m.TodoModel.ListModel, &m.TodoModel.EditModel, &m.AgentModel
 	addModel.TitleInput.Width = titleWidth
 	addModel.DescInput.SetWidth(descWidth)
 
 	editModel.TitleInput.Width = titleWidth
 	editModel.DescInput.SetWidth(descWidth)
 	editModel.IdInput.Width = idWidth
+
+	agentModel.PromptInput.Width = titleWidth
 	if listModel.List.Height() > 0 {
 		listHeight := listModel.List.Height()
 		listModel.DescViewport.Height = listHeight

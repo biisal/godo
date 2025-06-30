@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 
 	"github.com/biisal/todo-cli/todos/ui/setup"
@@ -14,7 +15,7 @@ import (
 
 var (
 	TodoMode     = todo.Mode{Value: "todoMode", Label: "Todo Mode"}
-	AiMode       = todo.Mode{Value: "aiMode", Label: "AI Mode"}
+	AgentMode    = todo.Mode{Value: "agentMode", Label: "Agent Mode"}
 	TodoAddMode  = todo.Mode{Value: "todoAddMode", Label: "Add Todo"}
 	TodoEditMode = todo.Mode{Value: "todoEditMode", Label: "Edit Todo"}
 	TodoListMode = todo.Mode{Value: "todoListMode", Label: "Todo List"}
@@ -29,6 +30,7 @@ type TeaModel struct {
 	Choices       []todo.Mode
 	SelectedIndex int
 	TodoModel     todo.TodoModel
+	AgentModel    agent.AgentModel
 	Width         int
 	Error         error
 }
@@ -55,7 +57,7 @@ func InitialModel() *TeaModel {
 
 	teaModel := TeaModel{
 		SelectedIndex: 0,
-		Choices:       []todo.Mode{TodoMode, AiMode},
+		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
 			AddModel: todo.TodoForm{
 				TitleInput: getTitleInput("Enter title"),
@@ -71,6 +73,9 @@ func InitialModel() *TeaModel {
 			SelectedIndex: 0,
 			Choices:       []todo.Mode{TodoListMode, TodoAddMode, TodoEditMode},
 		},
+		AgentModel: agent.AgentModel{
+			PromptInput: getTitleInput("Say hii..."),
+		},
 	}
 	teaModel.RefreshList()
 	return &teaModel
@@ -80,6 +85,15 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case agent.AgentResTeaMsg:
+		if msg.Error != nil {
+			m.ShowError(msg.Error, &cmds)
+			return m, nil
+		}
+
+		m.AgentModel.PromptInput.SetValue("")
+		m.AgentModel.History = msg.History
+		return m, nil
 	case clearErrorMsg:
 		m.Error = nil
 		return m, nil
@@ -101,12 +115,12 @@ func (m *TeaModel) View() string {
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
 		s += TodoView(m)
-	case AiMode.Value:
-		s += "AI MODE"
+	case AgentMode.Value:
+		s += AgentView(m)
 	}
 
 	if m.Error != nil {
-		s += "\n\n" + styles.ErrorStyle.Render(m.Error.Error())
+		s += "\n\n" + styles.ErrorStyle.Width(m.Width-20).Render(m.Error.Error())
 	}
 	return s
 }

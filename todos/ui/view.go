@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
@@ -77,6 +78,25 @@ func TodoView(m *TeaModel) string {
 	}
 	s += "\n\n"
 	s += setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex, "ctrl+right/left")
+
+	return s
+}
+
+func AgentView(m *TeaModel) string {
+	var s string
+	for _, msg := range m.AgentModel.History {
+		content := strings.TrimSpace(msg.Content)
+		if content == "" || strings.HasPrefix(content, "<function") {
+			continue
+		}
+		if msg.Role == agent.UserRole {
+			s += styles.GreenStyle.Width(m.Width-20).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#00FF00")).Render(content) + "\n"
+		} else {
+			s += styles.DescStyle.Width(m.Width-20).Render(content) + "\n"
+		}
+	}
+	s += m.AgentModel.Response + "\n"
+	s += styles.BoxStyle.Render(m.AgentModel.PromptInput.View())
 
 	return s
 }
