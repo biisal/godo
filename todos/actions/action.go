@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -141,8 +142,13 @@ func ToggleDone(id int) {
 	WriteTodos(todos)
 }
 
-type AiStreamMsg string
-type StreamDoneMsg struct{}
+var (
+	GetTodoCountFunc = "GetTodosCount"
+	AddTodoFunc      = "AddTodo"
+	DeleteTodoFunc   = "DeleteTodo"
+	ModifyTodoFunc   = "ModifyTodo"
+	ToggleDoneFunc   = "ToggleDone"
+)
 
 func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -166,7 +172,7 @@ func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
 				Type: "function",
 
 				Function: agent.FunctionReq{
-					Name:        "GetTodosCount",
+					Name:        GetTodoCountFunc,
 					Description: "Returns the number of todos",
 					Parameters: struct {
 						Type       string                        `json:"type"`
@@ -176,6 +182,31 @@ func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
 						Type:       "object",
 						Properties: map[string]agent.PropertyType{}, // ✅ Empty map
 						Required:   []string{},
+					},
+				},
+			},
+			{
+				Type: "function",
+				Function: agent.FunctionReq{
+					Name:        AddTodoFunc,
+					Description: "Add a todo to the list",
+					Parameters: struct {
+						Type       string                        `json:"type"`
+						Properties map[string]agent.PropertyType `json:"properties"`
+						Required   []string                      `json:"required"`
+					}{
+						Type: "object",
+						Properties: map[string]agent.PropertyType{
+							"title": {
+								Type:        "string",
+								Description: "The title of the todo",
+							},
+							"description": {
+								Type:        "string",
+								Description: "The description of the todo",
+							},
+						},
+						Required: []string{"title", "description"},
 					},
 				},
 			},
@@ -194,7 +225,9 @@ func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Got status code %d\nResponse: %s", resp.StatusCode, resp.Body)
+	}
 	var msgStruct agent.AgentRes
 	data, _ := io.ReadAll(resp.Body)
 	if err = json.Unmarshal(data, &msgStruct); err != nil {
@@ -204,31 +237,59 @@ func aiAPICall(history []agent.Message) (*agent.AgentRes, error) {
 	return &msgStruct, nil
 }
 
-func AiResponse(history []agent.Message) ([]agent.Message, error) {
+func AiResponse(history []agent.Message) ([]agent.Message, bool, error) {
 	agentRes, err := aiAPICall(history)
+	refrsh := false
 	if err != nil {
-		return nil, err
+		return nil, refrsh, err
 	}
 	if len(agentRes.Choices) == 0 {
-		return history, nil
+		return history, refrsh, nil
 	}
 	tools := agentRes.Choices[0].Message.ToolCalls
 	if len(tools) > 0 {
-		funcName := tools[0].Function.Name
-		if funcName == "GetTodosCount" {
+		funcName := strings.TrimSpace(tools[0].Function.Name)
+		switch funcName {
+		case GetTodoCountFunc:
 			result := GetTodosCount()
-
 			history = append(history,
 				agent.Message{
 					Role:       "tool",
 					Content:    result,
 					ToolCallId: tools[0].Id,
-					Name:       "GetTodosCount",
+					Name:       GetTodoCountFunc,
 				},
 			)
 			agentRes, err = aiAPICall(history)
 			if err != nil {
-				return nil, err
+				return nil, refrsh, err
+			}
+			history = append(history, agentRes.Choices[0].Message)
+		case AddTodoFunc:
+			var args struct {
+				Title       string `json:"title"`
+				Description string `json:"description"`
+			}
+			if err = json.Unmarshal([]byte(tools[0].Function.Arguments), &args); err != nil {
+				return nil, refrsh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tools[0].Function.Arguments)
+			}
+			_, err := AddTodo(args.Title, args.Description)
+			if err != nil {
+				return nil, refrsh, err
+			}
+			refrsh = true
+			resultStr := fmt.Sprintf("Added todo with title: %s and description: %s", args.Title, args.Description)
+			history = append(history,
+				agent.Message{
+					Role:       "tool",
+					Content:    resultStr,
+					ToolCallId: tools[0].Id,
+					Name:       AddTodoFunc,
+				},
+			)
+			agentRes, err = aiAPICall(history)
+			if err != nil {
+				return nil, refrsh, err
 			}
 			history = append(history, agentRes.Choices[0].Message)
 		}
@@ -236,7 +297,7 @@ func AiResponse(history []agent.Message) ([]agent.Message, error) {
 		history = append(history, agentRes.Choices[0].Message)
 	}
 	writeHistory(history)
-	return history, nil
+	return history, refrsh, nil
 
 }
 

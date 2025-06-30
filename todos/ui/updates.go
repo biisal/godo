@@ -174,7 +174,10 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 			}
 			m.AgentModel.History = append(m.AgentModel.History, msg)
 			return m, tea.Cmd(func() tea.Msg {
-				history, err := actions.AiResponse(m.AgentModel.History)
+				history, refresh, err := actions.AiResponse(m.AgentModel.History)
+				if refresh {
+					m.RefreshList()
+				}
 				if err == nil {
 					return agent.AgentResTeaMsg{
 						Error:   err,
