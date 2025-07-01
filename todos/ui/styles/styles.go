@@ -35,4 +35,8 @@ var (
 			Foreground(lipgloss.Color("#FF0000")).
 			Bold(true).Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#FF0000")).Padding(0, 1)
+	EventStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#00FF9E")).
+			Bold(true).Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#00FF9E")).Padding(0, 1)
 )

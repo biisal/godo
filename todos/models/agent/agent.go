@@ -12,6 +12,7 @@ const (
 	UserRole      = "user"
 	AssistantRole = "assistant"
 	SystemRole    = "system"
+	ToolRole      = "tool"
 )
 
 type Message struct {
@@ -19,6 +20,7 @@ type Message struct {
 	ToolCallId string     `json:"tool_call_id,omitempty"`
 	Role       string     `json:"role"`
 	Content    string     `json:"content"`
+	Reasoning  string     `json:"reasoning,omitempty"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
 
@@ -27,15 +29,15 @@ type PropertyType struct {
 	Description string   `json:"description"`
 	Enum        []string `json:"enum,omitempty"` // ✅ optional field
 }
-
+type Parameters struct {
+	Type       string                  `json:"type"`
+	Properties map[string]PropertyType `json:"properties"`
+	Required   []string                `json:"required"`
+}
 type FunctionReq struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Parameters  struct {
-		Type       string                  `json:"type"`
-		Properties map[string]PropertyType `json:"properties"`
-		Required   []string                `json:"required"`
-	} `json:"parameters"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Parameters  Parameters `json:"parameters"`
 }
 type Tool struct {
 	Type     string      `json:"type"`

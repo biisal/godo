@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 
@@ -27,6 +28,7 @@ type item struct {
 }
 
 type TeaModel struct {
+	EventMsg      string
 	Choices       []todo.Mode
 	SelectedIndex int
 	TodoModel     todo.TodoModel
@@ -35,10 +37,10 @@ type TeaModel struct {
 	Error         error
 }
 
-func getTitleInput(placeholder string) textinput.Model {
+func getTitleInput(prompt, placeholder string) textinput.Model {
 	input := textinput.New()
 	input.Placeholder = placeholder
-	input.Prompt = "Title > "
+	input.Prompt = prompt
 	input.Focus()
 	return input
 }
@@ -51,6 +53,14 @@ func getDescInput(placeholder string) textarea.Model {
 	return input
 }
 
+type eventMsg string
+
+func waitForActivity(ev chan string) tea.Cmd {
+	return func() tea.Msg {
+		return eventMsg(<-ev)
+	}
+}
+
 func InitialModel() *TeaModel {
 	idInput := textinput.New()
 	idInput.Prompt = "ID > "
@@ -60,13 +70,13 @@ func InitialModel() *TeaModel {
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
 			AddModel: todo.TodoForm{
-				TitleInput: getTitleInput("Enter title"),
+				TitleInput: getTitleInput("Title > ", "Enter title"),
 				DescInput:  getDescInput("Enter description"),
 				InputCount: 2,
 			},
 			EditModel: todo.TodoForm{
 				IdInput:    idInput,
-				TitleInput: getTitleInput("Edit title"),
+				TitleInput: getTitleInput("Title > ", "Edit title"),
 				DescInput:  getDescInput("Edit description"),
 				InputCount: 3,
 			},
@@ -74,7 +84,7 @@ func InitialModel() *TeaModel {
 			Choices:       []todo.Mode{TodoListMode, TodoAddMode, TodoEditMode},
 		},
 		AgentModel: agent.AgentModel{
-			PromptInput: getTitleInput("Say hii..."),
+			PromptInput: getTitleInput("> ", "Ask Agent and perform todo tasks.."),
 		},
 	}
 	teaModel.RefreshList()
@@ -100,6 +110,9 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		UpdateOnSize(msg, m)
 		return m, nil
+	case eventMsg:
+		m.EventMsg = string(msg)
+		return m, waitForActivity(config.Cfg.Event)
 	case tea.KeyMsg:
 		_, cmd := UpdateOnKey(msg, m)
 		if cmd != nil {
@@ -126,5 +139,7 @@ func (m *TeaModel) View() string {
 }
 
 func (m *TeaModel) Init() tea.Cmd {
-	return nil
+	return tea.Batch(
+		waitForActivity(config.Cfg.Event),
+	)
 }

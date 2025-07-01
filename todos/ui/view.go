@@ -86,17 +86,24 @@ func AgentView(m *TeaModel) string {
 	var s string
 	for _, msg := range m.AgentModel.History {
 		content := strings.TrimSpace(msg.Content)
-		if content == "" || strings.HasPrefix(content, "<function") {
+		reasoning := strings.TrimSpace(msg.Reasoning)
+		if msg.Role == agent.ToolRole || (content == "" && reasoning == "") || strings.HasPrefix(content, "<function") {
 			continue
 		}
 		if msg.Role == agent.UserRole {
 			s += styles.GreenStyle.Width(m.Width-20).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#00FF00")).Render(content) + "\n"
 		} else {
+			if reasoning != "" {
+				content = reasoning + "\n\n" + content
+			}
 			s += styles.DescStyle.Width(m.Width-20).Render(content) + "\n"
 		}
 	}
 	s += m.AgentModel.Response + "\n"
 	s += styles.BoxStyle.Render(m.AgentModel.PromptInput.View())
 
+	if m.EventMsg != "" {
+		s += "\n\n" + styles.EventStyle.Render(m.EventMsg) + "\n"
+	}
 	return s
 }

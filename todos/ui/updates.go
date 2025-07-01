@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/biisal/todo-cli/todos/actions"
+	// "github.com/biisal/todo-cli/config"
+	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
+	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
@@ -51,7 +53,7 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 	case "ctrl+s":
 		switch m.TodoModel.SelectedIndex {
 		case 1:
-			_, err := actions.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
+			_, err := todoAction.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
 			if err != nil {
 				m.ShowError(err, cmds)
 				return
@@ -66,7 +68,7 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 				m.ShowError(WrongTypeIdError, cmds)
 				return
 			}
-			_, err = actions.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
+			_, err = todoAction.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
 			if err != nil {
 				m.ShowError(err, cmds)
 				return
@@ -110,7 +112,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
 			id := selected.(todo.Todo).ID
-			actions.ToggleDone(id)
+			todoAction.ToggleDone(id)
 			m.RefreshList()
 		}
 	case "ctrl+e":
@@ -125,7 +127,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 	case "delete":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
-			_, err := actions.DeleteTodo(selected.(todo.Todo).ID)
+			_, err := todoAction.DeleteTodo(selected.(todo.Todo).ID)
 			if err != nil {
 				m.ShowError(err, nil)
 				return m, nil
@@ -174,7 +176,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 			}
 			m.AgentModel.History = append(m.AgentModel.History, msg)
 			return m, tea.Cmd(func() tea.Msg {
-				history, refresh, err := actions.AiResponse(m.AgentModel.History)
+				history, refresh, err := agentAction.AgentResponse(m.AgentModel.History)
 				if refresh {
 					m.RefreshList()
 				}
@@ -183,8 +185,10 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 						Error:   err,
 						History: history,
 					}
+				} else {
+					m.ShowError(err, &cmds)
 				}
-				return nil
+				return m
 			})
 		}
 		input, cmd := m.AgentModel.PromptInput.Update(msg)
@@ -234,7 +238,7 @@ func (m *TeaModel) RefreshList() {
 		m.TodoModel.ListModel.List.SetShowStatusBar(false)
 
 	}()
-	todos, _ := actions.GetTodos()
+	todos, _ := todoAction.GetTodos()
 	totalTodos := len(todos)
 	items := []list.Item{}
 	for _, todo := range todos {
