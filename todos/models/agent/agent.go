@@ -70,9 +70,10 @@ type AgentRes struct {
 	Created int    `json:"created"`
 	Model   string `json:"model"`
 	Choices []struct {
-		Message      Message `json:"message"`
-		Logprobs     float64 `json:"logprobs"`
-		FinishReason string  `json:"finish_reason"`
+		Delta        Message `json:"delta"`
+		Message      Message `json:"message,omitempty"`
+		Logprobs     any     `json:"logprobs,omitempty"`
+		FinishReason any     `json:"finish_reason,omitempty"`
 	} `json:"choices"`
 	Error struct {
 		Message string `json:"message"`

@@ -3,7 +3,6 @@ package todo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -141,10 +140,10 @@ func ToggleDone(id int) {
 	WriteTodos(todos)
 }
 
-func GetTodosInfo() (string, error) {
+func GetTodosInfo() (int, int, int, error) {
 	todos, err := GetTodos()
 	if err != nil {
-		return "", err
+		return 0, 0, 0, err
 	}
 	completd, total := 0, len(todos)
 	for _, todo := range todos {
@@ -152,5 +151,5 @@ func GetTodosInfo() (string, error) {
 			completd++
 		}
 	}
-	return fmt.Sprintf("Total : %d, Completed : %d, Remaining : %d", total, completd, total-completd), nil
+	return total, completd, total - completd, nil
 }

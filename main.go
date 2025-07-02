@@ -15,7 +15,15 @@ func main() {
 		os.Exit(1)
 	}
 	p := tea.NewProgram(ui.InitialModel())
+
+	go func() {
+		for msg := range config.AgentRes {
+			p.Send(ui.AgentRes(msg))
+		}
+	}()
+
 	if _, err := p.Run(); err != nil {
+		config.WriteLog(false, err)
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}

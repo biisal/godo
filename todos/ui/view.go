@@ -1,12 +1,18 @@
 package ui
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/biisal/todo-cli/config"
+	todoaction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -91,19 +97,53 @@ func AgentView(m *TeaModel) string {
 			continue
 		}
 		if msg.Role == agent.UserRole {
-			s += styles.GreenStyle.Width(m.Width-20).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#00FF00")).Render(content) + "\n"
+			s += styles.UserContentStyle.Padding(0, 1).Width(m.Width-20).Render(content) + "\n"
 		} else {
 			if reasoning != "" {
 				content = reasoning + "\n\n" + content
 			}
-			s += styles.DescStyle.Width(m.Width-20).Render(content) + "\n"
+			s += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+content) + "\n"
 		}
+	}
+	if m.AgentRss != "" {
+		s += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+m.AgentRss) + "\n"
+
 	}
 	s += m.AgentModel.Response + "\n"
 	s += styles.BoxStyle.Render(m.AgentModel.PromptInput.View())
 
 	if m.EventMsg != "" {
 		s += "\n\n" + styles.EventStyle.Render(m.EventMsg) + "\n"
+	}
+	return s
+}
+
+func ExitView() string {
+	timeSpent := time.Since(config.StartTime).Round(time.Second).String()
+	timeStr := fmt.Sprintf("%v", timeSpent)
+	totalTodos, completed, remains, err := todoaction.GetTodosInfo()
+	var s string
+	if err == nil {
+		columns := []table.Column{
+			{
+				Title: "SUMMURY",
+				Width: 20,
+			},
+			{
+				Title: "",
+				Width: 20,
+			},
+		}
+		rows := []table.Row{
+			{"Time Spent", timeStr},
+			{"Total Todos", strconv.Itoa(totalTodos)},
+			{"Completed", strconv.Itoa(completed)},
+			{"Remains", strconv.Itoa(remains)},
+		}
+		t := table.New(table.WithColumns(columns), table.WithRows(rows))
+		t.SetHeight(5)
+
+		s = styles.BoxStyle.Render(t.View()) + "\n\n"
 	}
 	return s
 }

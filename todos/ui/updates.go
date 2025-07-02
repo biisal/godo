@@ -152,6 +152,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	defer SetUpDefalutKeys(key, m)
 	if key == "esc" || key == "ctrl+c" {
+		m.IsExiting = true
 		return m, tea.Quit
 	}
 	switch m.Choices[m.SelectedIndex].Value {
@@ -296,4 +297,11 @@ func (m *TeaModel) ShowError(err error, cmds *[]tea.Cmd) {
 		time.Sleep(4 * time.Second)
 		return clearErrorMsg{}
 	})
+}
+
+func (m *TeaModel) Exit(cmds *[]tea.Cmd) {
+	// *cmds = append(*cmds, func() tea.Msg {
+	// 	time.Sleep(time.Second * 2)
+	// 	return tea.Quit()
+	// })
 }

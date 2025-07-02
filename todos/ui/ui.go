@@ -28,6 +28,7 @@ type item struct {
 }
 
 type TeaModel struct {
+	IsExiting     bool
 	EventMsg      string
 	Choices       []todo.Mode
 	SelectedIndex int
@@ -35,6 +36,7 @@ type TeaModel struct {
 	AgentModel    agent.AgentModel
 	Width         int
 	Error         error
+	AgentRss      string
 }
 
 func getTitleInput(prompt, placeholder string) textinput.Model {
@@ -54,6 +56,7 @@ func getDescInput(placeholder string) textarea.Model {
 }
 
 type eventMsg string
+type AgentRes config.AgentResModel
 
 func waitForActivity(ev chan string) tea.Cmd {
 	return func() tea.Msg {
@@ -113,6 +116,14 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case eventMsg:
 		m.EventMsg = string(msg)
 		return m, waitForActivity(config.Cfg.Event)
+	case AgentRes:
+		// fmt.Println("MSg", msg)
+		if !msg.Done {
+			m.AgentRss += msg.Text
+		} else {
+			m.AgentRss = ""
+		}
+		return m, nil
 	case tea.KeyMsg:
 		_, cmd := UpdateOnKey(msg, m)
 		if cmd != nil {
@@ -123,7 +134,12 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TeaModel) View() string {
-	s := styles.TitleStyle.Render(styles.Logo)
+	s := styles.TitleStyle.Render(styles.Logo) + "\n\n"
+	if m.IsExiting {
+		s += ExitView()
+		return s
+	}
+
 	s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "alt+right/left")
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:

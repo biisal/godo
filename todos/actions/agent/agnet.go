@@ -1,11 +1,11 @@
 package agent
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -40,10 +40,11 @@ func getFuncFormatted(toolType, name, description string, properties map[string]
 
 }
 
-func agentAPICall(history []agent.Message) (*agent.AgentRes, error) {
+func agentAPICall(history *[]agent.Message) ([]agent.ToolCall, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	history = append([]agent.Message{
+	stream := true
+	*history = append([]agent.Message{
 		{
 			Role: "system",
 			Content: `You are a helpful and goal-oriented agent. Your primary role is to assist users in staying consistent with their goals.
@@ -52,13 +53,13 @@ You have access to tools and may use them when necessary — but you must use th
 You must summarize any tool outputs clearly and return only the relevant results to the user. Do not mention tool usage or reveal that a tool was invoked.
 Focus on providing concise, actionable, and helpful responses that guide the user effectively toward their goals.`,
 		},
-	}, history...)
+	}, *history...)
 	url := "https://api.groq.com/openai/v1/chat/completions"
 	body := agent.AgentReq{
-		Messages: history,
+		Messages: *history,
 		Model:    config.Cfg.GROQ_MODEL,
 		TopP:     1,
-		Stream:   false,
+		Stream:   stream,
 		Tools: []agent.Tool{
 			getFuncFormatted("function", GetTodosInfoFunc,
 				"Returns the todos info [total , completed , remains]",
@@ -94,23 +95,52 @@ Focus on providing concise, actionable, and helpful responses that guide the use
 		return nil, err
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	writeHistory(string(data))
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Got status code %d\nResponse: %s", resp.StatusCode, data)
-	}
 	var msgStruct agent.AgentRes
-	if err = json.Unmarshal(data, &msgStruct); err != nil {
-		return nil, err
+	var fullMsg string
+	if stream {
+		scanner := bufio.NewScanner(resp.Body)
+		buf := make([]byte, 1024*1024) // 1MB buffer
+		scanner.Buffer(buf, len(buf))
+		for scanner.Scan() {
+			data := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "data: "))
+			if data == "[DATA]" {
+				break
+			}
+			if data == "" || !strings.HasPrefix(data, "{") {
+				continue
+			}
+			if err := json.Unmarshal([]byte(data), &msgStruct); err != nil {
+				return nil, err
+			}
+			tools := msgStruct.Choices[0].Delta.ToolCalls
+			if len(tools) > 0 {
+				*history = append(*history, msgStruct.Choices[0].Delta)
+				return tools, nil
+			}
+			text := msgStruct.Choices[0].Delta.Content
+			fullMsg += text
+			config.AgentRes <- config.AgentResModel{
+				Text: text,
+				Done: false,
+			}
+		}
 	}
-	return &msgStruct, nil
+
+	config.AgentRes <- config.AgentResModel{
+		Text: fullMsg,
+		Done: true,
+	}
+	*history = append(*history, agent.Message{
+		Content: fullMsg,
+		Role:    agent.AssistantRole,
+	})
+	return []agent.ToolCall{}, nil
 }
 
 func AgentResponse(history []agent.Message) ([]agent.Message, bool, error) {
-	agentRes, err := agentAPICall(history)
+	config.WriteLog(false, "BEFORE", history)
+	tools, err := agentAPICall(&history)
+	config.WriteLog(false, "AFTER", history)
 	ev := config.Cfg.Event
 	ev <- "ᯓ➤ Thinking"
 	defer func() {
@@ -120,22 +150,17 @@ func AgentResponse(history []agent.Message) ([]agent.Message, bool, error) {
 	if err != nil {
 		return nil, refrsh, err
 	}
-	if len(agentRes.Choices) == 0 {
-		return history, refrsh, nil
-	}
-	history = append(history, agentRes.Choices[0].Message)
-	tools := agentRes.Choices[0].Message.ToolCalls
-	if len(tools) > 0 {
+	for _, tool := range tools {
 		config.Cfg.Event <- "Working..."
-		funcName := strings.TrimSpace(tools[0].Function.Name)
+		funcName := strings.TrimSpace(tool.Function.Name)
 		switch funcName {
 		case AddTodoFunc:
 			var args struct {
 				Title       string `json:"title"`
 				Description string `json:"description"`
 			}
-			if err = json.Unmarshal([]byte(tools[0].Function.Arguments), &args); err != nil {
-				return nil, refrsh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tools[0].Function.Arguments)
+			if err = json.Unmarshal([]byte(tool.Function.Arguments), &args); err != nil {
+				return nil, refrsh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Function.Arguments)
 			}
 			_, err := todo.AddTodo(args.Title, args.Description)
 			if err != nil {
@@ -147,17 +172,17 @@ func AgentResponse(history []agent.Message) ([]agent.Message, bool, error) {
 				agent.Message{
 					Role:       agent.ToolRole,
 					Content:    resultStr,
-					ToolCallId: tools[0].Id,
+					ToolCallId: tool.Id,
 					Name:       AddTodoFunc,
 				},
 			)
-			agentRes, err = agentAPICall(history)
+			_, err = agentAPICall(&history)
 			if err != nil {
 				return nil, refrsh, err
 			}
-			history = append(history, agentRes.Choices[0].Message)
 		case GetTodosInfoFunc:
-			result, err := todo.GetTodosInfo()
+			total, completed, remains, err := todo.GetTodosInfo()
+			result := fmt.Sprintf("Total : %d, Completed : %d, Remaining : %d", total, completed, remains)
 			if err != nil {
 				return nil, refrsh, err
 			}
@@ -165,17 +190,17 @@ func AgentResponse(history []agent.Message) ([]agent.Message, bool, error) {
 				agent.Message{
 					Role:       agent.ToolRole,
 					Content:    result,
-					ToolCallId: tools[0].Id,
+					ToolCallId: tool.Id,
 					Name:       GetTodosInfoFunc,
 				},
 			)
-			agentRes, err = agentAPICall(history)
+			_, err = agentAPICall(&history)
 			if err != nil {
 				return nil, refrsh, err
 			}
-			history = append(history, agentRes.Choices[0].Message)
 		}
 	}
+	writeHistory(history)
 	return history, refrsh, nil
 
 }
@@ -186,12 +211,12 @@ func writeHistory(data any) error {
 		return err
 	}
 	defer file.Close()
-	dataMap := map[string]any{}
-	err = json.Unmarshal([]byte(data.(string)), &dataMap)
-	if err != nil {
-		return err
-	}
-	err = json.NewEncoder(file).Encode(dataMap)
+	// dataMap := map[string]any{}
+	// err = json.Unmarshal([]byte(data.(string)), &dataMap)
+	// if err != nil {
+	// 	return err
+	// }
+	err = json.NewEncoder(file).Encode(data)
 	if err != nil {
 		return err
 	}
