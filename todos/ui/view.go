@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/biisal/todo-cli/config"
+	agentaction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoaction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
@@ -90,30 +91,33 @@ func TodoView(m *TeaModel) string {
 
 func AgentView(m *TeaModel) string {
 	var s string
-	for _, msg := range m.AgentModel.History {
-		content := strings.TrimSpace(msg.Content)
-		reasoning := strings.TrimSpace(msg.Reasoning)
-		if msg.Role == agent.ToolRole || (content == "" && reasoning == "") || strings.HasPrefix(content, "<function") {
-			continue
-		}
-		if msg.Role == agent.UserRole {
-			s += styles.UserContentStyle.Padding(0, 1).Width(m.Width-20).Render(content) + "\n"
-		} else {
-			if reasoning != "" {
-				content = reasoning + "\n\n" + content
+	var chatContent string
+	historyLen := len(agentaction.History)
+	if historyLen == 0 {
+		chatContent = styles.PurpleStyle.Margin(0, 1).Render("Made in India with ❤️ by Biisal") + "\n"
+	} else {
+		for _, msg := range agentaction.History {
+			content := strings.TrimSpace(msg.Content)
+			reasoning := strings.TrimSpace(msg.Reasoning)
+			if msg.Role == agent.ToolRole || (content == "" && reasoning == "") || strings.HasPrefix(content, "<function") {
+				continue
 			}
-			s += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+content) + "\n"
+			if msg.Role == agent.UserRole {
+				chatContent += styles.UserContentStyle.Padding(0, 1).Width(m.Width-20).Render(content) + "\n"
+			} else {
+				if reasoning != "" {
+					content = reasoning + "\n\n" + content
+				}
+				chatContent += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+content) + "\n"
+			}
 		}
 	}
-	if m.AgentRss != "" {
-		s += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+m.AgentRss) + "\n"
-
-	}
+	m.AgentModel.ChatViewport.SetContent(chatContent)
+	s += lipgloss.NewStyle().Render(m.AgentModel.ChatViewport.View()) + "\n"
 	s += m.AgentModel.Response + "\n"
-	s += styles.BoxStyle.Render(m.AgentModel.PromptInput.View())
-
+	s += styles.BoxStyle.Render(m.AgentModel.PromptInput.View()) + "\n"
 	if m.EventMsg != "" {
-		s += "\n\n" + styles.EventStyle.Render(m.EventMsg) + "\n"
+		s += "\n" + styles.EventStyle.Render(m.EventMsg) + "\n"
 	}
 	return s
 }

@@ -14,11 +14,14 @@ func main() {
 		fmt.Printf("Failed To Load Config %v: ", err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(ui.InitialModel())
+	m := ui.InitialModel()
+	p := tea.NewProgram(m)
 
 	go func() {
-		for msg := range config.AgentRes {
-			p.Send(ui.AgentRes(msg))
+		for msg := range config.Ping {
+			config.WriteLog(false, msg)
+			p.Send(msg)
+			m.AgentModel.ChatViewport.GotoBottom()
 		}
 	}()
 

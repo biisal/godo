@@ -12,20 +12,18 @@ import (
 
 type Config struct {
 	GROQ_MODEL   string `env:"GROQ_MODEL"`
-	GROQ_API_KEY string `env:"GROQ_API_KEY" env-required:"true"`
+	GROQ_API_KEY string `env:"GROQ_API_KEY"`
 	Event        chan string
-}
-type AgentResModel struct {
-	Text string
-	Done bool
 }
 
 var (
-	Cfg       Config
-	StartTime time.Time
-	AgentRes  = make(chan AgentResModel, 2)
-	LOGDIR    = "./"
-	APPNAME   = "logs"
+	Cfg          Config
+	StartTime    time.Time
+	Ping         = make(chan string, 250)
+	HomeDIR      string
+	AppName      = "logs"
+	LogDIR       string
+	TodoFilePath string
 )
 
 func checkErr(err error) bool {
@@ -45,7 +43,7 @@ func WriteLog(DEBUG bool, msg ...any) {
 	if DEBUG {
 		fmt.Println(msg...)
 	} else {
-		logfile, err := os.OpenFile(LOGDIR+"/"+APPNAME+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logfile, err := os.OpenFile(LogDIR+"/"+AppName+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if !checkErr(err) {
 			log.SetOutput(logfile)
 			log.Println(msg...)
@@ -55,8 +53,15 @@ func WriteLog(DEBUG bool, msg ...any) {
 }
 
 func MustLoad() error {
+	var err error
+	HomeDIR, err = os.UserHomeDir()
+
+	if err != nil {
+		return fmt.Errorf("Failed to get user home directory for writing logs and todos: %s", err.Error())
+	}
+
 	if err := godotenv.Load("./.env"); err != nil {
-		return err
+		fmt.Println("Warning : .env file not found")
 	}
 	if err := cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
@@ -66,6 +71,17 @@ func MustLoad() error {
 	Cfg.Event <- ":)"
 	if Cfg.GROQ_MODEL == "" {
 		Cfg.GROQ_MODEL = "llama-3.1-8b-instant"
+		fmt.Println("GROQ_MODEL is not set, using default value:", Cfg.GROQ_MODEL)
 	}
+	if Cfg.GROQ_API_KEY == "" {
+		Cfg.GROQ_API_KEY = os.Getenv("GROQ_API_KEY")
+	}
+	if Cfg.GROQ_API_KEY == "" {
+		return fmt.Errorf("GROQ_API_KEY is not set")
+	}
+
+	LogDIR = HomeDIR + "/.local/share/godo"
+	LogDIR = HomeDIR + "/local/share/godo"
+	TodoFilePath = HomeDIR + "/local/share/godo/agentTodos.json"
 	return nil
 }

@@ -12,9 +12,11 @@ const Logo = `
 `
 
 var (
-	AgentContentStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#f8baff")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#f8baff")).Bold(true)
-	UserContentStyle = lipgloss.NewStyle().
+	PurpleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#f8baff")).Bold(true)
+
+	AgentContentStyle = PurpleStyle.Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#f8baff"))
+	UserContentStyle  = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#99faff")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#99faff")).Bold(true)
 	DescStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#00FFFF")).

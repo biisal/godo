@@ -10,25 +10,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/todos/models/todo"
 )
 
 var (
 	ErrorEmpty     = errors.New("Title or Description can't be empty")
 	ErrorInvalidId = errors.New("Invalid ID")
-	TodoFilePath   = "./todos.json"
 )
 
-func init() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic("Failed to get user home directory: " + err.Error())
-	}
-	TodoFilePath = home + "/.local/share/godo/agentTodos.json"
-}
-
 func GetTodos() ([]todo.Todo, error) {
-	path := TodoFilePath
+	path := config.TodoFilePath
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		dir := filepath.Dir(path)
 		if err = os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -64,7 +56,7 @@ func GetTodosCount() string {
 }
 
 func WriteTodos(todos []todo.Todo) error {
-	path := TodoFilePath
+	path := config.TodoFilePath
 	file, err := os.Create(path)
 	if err != nil {
 		return err
@@ -131,13 +123,23 @@ func ModifyTodo(id int, title, description string) ([]todo.Todo, error) {
 	return todos, nil
 }
 
-func ToggleDone(id int) {
+func ToggleDone(id int, doneStatus ...bool) (bool, error) {
 	todos, err := GetTodos()
 	if err != nil {
-		return
+		return false, err
 	}
-	todos[id].Done = !todos[id].Done
-	WriteTodos(todos)
+	if id > len(todos) {
+		return false, ErrorInvalidId
+	}
+	if len(doneStatus) > 0 {
+		todos[id].Done = doneStatus[0]
+	} else {
+		todos[id].Done = !todos[id].Done
+	}
+	if err := WriteTodos(todos); err != nil {
+		return false, err
+	}
+	return todos[id].Done, nil
 }
 
 func GetTodosInfo() (int, int, int, error) {
@@ -152,4 +154,16 @@ func GetTodosInfo() (int, int, int, error) {
 		}
 	}
 	return total, completd, total - completd, nil
+}
+
+func GetTodoById(id int) (*todo.Todo, error) {
+	todos, err := GetTodos()
+	if err != nil {
+		return nil, err
+	}
+	if id < 0 || id >= len(todos) {
+		return nil, ErrorInvalidId
+	}
+	return &todos[id], nil
+
 }

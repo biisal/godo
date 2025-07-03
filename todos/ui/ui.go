@@ -9,6 +9,7 @@ import (
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -35,8 +36,8 @@ type TeaModel struct {
 	TodoModel     todo.TodoModel
 	AgentModel    agent.AgentModel
 	Width         int
+	Height        int
 	Error         error
-	AgentRss      string
 }
 
 func getTitleInput(prompt, placeholder string) textinput.Model {
@@ -56,7 +57,6 @@ func getDescInput(placeholder string) textarea.Model {
 }
 
 type eventMsg string
-type AgentRes config.AgentResModel
 
 func waitForActivity(ev chan string) tea.Cmd {
 	return func() tea.Msg {
@@ -88,6 +88,10 @@ func InitialModel() *TeaModel {
 		},
 		AgentModel: agent.AgentModel{
 			PromptInput: getTitleInput("> ", "Ask Agent and perform todo tasks.."),
+			ChatViewport: viewport.Model{
+				Height: 0,
+				Width:  0,
+			},
 		},
 	}
 	teaModel.RefreshList()
@@ -103,7 +107,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ShowError(msg.Error, &cmds)
 			return m, nil
 		}
-
 		m.AgentModel.PromptInput.SetValue("")
 		m.AgentModel.History = msg.History
 		return m, nil
@@ -116,14 +119,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case eventMsg:
 		m.EventMsg = string(msg)
 		return m, waitForActivity(config.Cfg.Event)
-	case AgentRes:
-		// fmt.Println("MSg", msg)
-		if !msg.Done {
-			m.AgentRss += msg.Text
-		} else {
-			m.AgentRss = ""
-		}
-		return m, nil
 	case tea.KeyMsg:
 		_, cmd := UpdateOnKey(msg, m)
 		if cmd != nil {

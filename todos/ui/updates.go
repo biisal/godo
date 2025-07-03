@@ -9,7 +9,6 @@ import (
 	// "github.com/biisal/todo-cli/config"
 	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
-	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
@@ -170,25 +169,20 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		}
 	case AgentMode.Value:
 		switch key {
+		case "up":
+			m.AgentModel.ChatViewport.ScrollUp(1)
+		case "down":
+			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
-			msg := agent.Message{
-				Role:    agent.UserRole,
-				Content: m.AgentModel.PromptInput.Value(),
-			}
-			m.AgentModel.History = append(m.AgentModel.History, msg)
 			return m, tea.Cmd(func() tea.Msg {
-				history, refresh, err := agentAction.AgentResponse(m.AgentModel.History)
+				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value())
 				if refresh {
 					m.RefreshList()
 				}
-				if err == nil {
-					return agent.AgentResTeaMsg{
-						Error:   err,
-						History: history,
-					}
-				} else {
+				if err != nil {
 					m.ShowError(err, &cmds)
 				}
+				m.AgentModel.PromptInput.Reset()
 				return m
 			})
 		}
@@ -201,6 +195,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 
 func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	m.Width = msg.Width
+	m.Height = msg.Height
 	titleWidth, descWidth, idWidth := m.Width-60, m.Width-10, m.Width-70
 	addModel, listModel, editModel, agentModel := &m.TodoModel.AddModel, &m.TodoModel.ListModel, &m.TodoModel.EditModel, &m.AgentModel
 	addModel.TitleInput.Width = titleWidth
@@ -211,7 +206,13 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	editModel.IdInput.Width = idWidth
 
 	agentModel.PromptInput.Width = titleWidth
-	if listModel.List.Height() > 0 {
+	reserved := 20
+	chatHeight := max(m.Height-reserved, 0)
+
+	agentModel.ChatViewport.Width = m.Width
+	agentModel.ChatViewport.Height = chatHeight
+
+	if m.SelectedIndex == 0 && listModel.List.Height() > 0 {
 		listHeight := listModel.List.Height()
 		listModel.DescViewport.Height = listHeight
 		listModel.DescViewport.Width = m.Width/2 - 9

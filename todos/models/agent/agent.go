@@ -1,11 +1,15 @@
 package agent
 
-import "github.com/charmbracelet/bubbles/textinput"
+import (
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
+)
 
 type AgentModel struct {
-	PromptInput textinput.Model
-	Response    string
-	History     []Message
+	PromptInput  textinput.Model
+	Response     string
+	History      []Message
+	ChatViewport viewport.Model
 }
 
 const (
