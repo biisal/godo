@@ -126,10 +126,11 @@ Focus on providing concise, actionable, and helpful responses that guide the use
 		return nil, fmt.Errorf("unexpected status code: %d, reason: %s", resp.StatusCode, string(body))
 	}
 	defer resp.Body.Close()
-	var assistantMessage *agent.Message
 	var toolCalls []agent.ToolCall
 	var msgStruct agent.AgentRes
 	var fullMsg string
+	var currentMessageIndex int = -1
+
 	if stream {
 		scanner := bufio.NewScanner(resp.Body)
 		buf := make([]byte, 1024*1024)
@@ -160,29 +161,24 @@ Focus on providing concise, actionable, and helpful responses that guide the use
 			}
 			if content != "" {
 				fullMsg += content
-				historyLen := len(History)
-				if historyLen > 0 && History[historyLen-1].Role == agent.AssistantRole {
-					History[historyLen-1].Content += content
-				} else {
+				if currentMessageIndex == -1 {
 					History = append(History, agent.Message{
 						Role:    agent.AssistantRole,
 						Content: content,
 					})
+					currentMessageIndex = len(History) - 1
+				} else {
+					History[currentMessageIndex].Content += content
 				}
 				config.Ping <- ""
 			}
 		}
 	}
-
-	if len(toolCalls) > 0 {
-		assistantMessage = &agent.Message{
-			Role:      agent.AssistantRole,
-			Content:   fullMsg,
-			ToolCalls: toolCalls,
-		}
-		History = append(History, *assistantMessage)
+	if len(toolCalls) > 0 && currentMessageIndex != -1 {
+		History[currentMessageIndex].ToolCalls = toolCalls
 		return toolCalls, nil
 	}
+
 	return nil, nil
 }
 
@@ -264,13 +260,13 @@ func runFunction(funcName string, tool agent.ToolCall) (string, bool, error) {
 		}
 	case ToggleDoneFunc:
 		var args struct {
-			Id        int  `json:"id"`
-			NewStatus bool `json:"new_status"`
+			Id   int  `json:"id"`
+			Done bool `json:"done"`
 		}
 		if err := json.Unmarshal([]byte(tool.Function.Arguments), &args); err != nil {
 			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Function.Arguments)
 		}
-		isDone, err := todo.ToggleDone(args.Id, args.NewStatus)
+		isDone, err := todo.ToggleDone(args.Id, args.Done)
 		if err != nil {
 			return "", refresh, err
 		}
@@ -288,6 +284,9 @@ func runFunction(funcName string, tool agent.ToolCall) (string, bool, error) {
 			return "", refresh, err
 		}
 		resultStr = fmt.Sprintf("%d {Title : %s\nDescription %s\n Done :%t}\n\n", todo.ID, todo.TitleText, todo.DescriptionText, todo.Done)
+	default:
+		return "", refresh, fmt.Errorf("Unknown function %s", funcName)
+
 	}
 	return resultStr, refresh, nil
 
