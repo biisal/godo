@@ -97,17 +97,19 @@ func AgentView(m *TeaModel) string {
 		chatContent = styles.PurpleStyle.Margin(0, 1).Render("Made in India with ❤️ by Biisal") + "\n"
 	} else {
 		for _, msg := range agentaction.History {
-			content := strings.TrimSpace(msg.Content)
-			reasoning := strings.TrimSpace(msg.Reasoning)
-			if msg.Role == agent.ToolRole || (content == "" && reasoning == "") || strings.HasPrefix(content, "<function") {
+			if msg.IsToolReq {
+				continue
+			}
+			content := ""
+			for _, part := range msg.Parts {
+				content += part.Text
+			}
+			if content == "" {
 				continue
 			}
 			if msg.Role == agent.UserRole {
 				chatContent += styles.UserContentStyle.Padding(0, 1).Width(m.Width-20).Render(content) + "\n"
 			} else {
-				if reasoning != "" {
-					content = reasoning + "\n\n" + content
-				}
 				chatContent += styles.AgentContentStyle.PaddingLeft(1).Width(m.Width-20).Render("✦ "+content) + "\n"
 			}
 		}

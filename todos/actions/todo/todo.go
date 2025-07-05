@@ -128,7 +128,7 @@ func ToggleDone(id int, doneStatus ...bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if id > len(todos) {
+	if id > len(todos)-1 {
 		return false, ErrorInvalidId
 	}
 	if len(doneStatus) > 0 {

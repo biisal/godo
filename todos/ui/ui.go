@@ -102,14 +102,14 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case agent.AgentResTeaMsg:
-		if msg.Error != nil {
-			m.ShowError(msg.Error, &cmds)
-			return m, nil
-		}
-		m.AgentModel.PromptInput.SetValue("")
-		m.AgentModel.History = msg.History
-		return m, nil
+	// case agent.AgentResTeaMsg:
+	// 	if msg.Error != nil {
+	// 		m.ShowError(msg.Error, &cmds)
+	// 		return m, nil
+	// 	}
+	// 	m.AgentModel.PromptInput.SetValue("")
+	// 	m.AgentModel.History = msg.History
+	// 	return m, nil
 	case clearErrorMsg:
 		m.Error = nil
 		return m, nil
