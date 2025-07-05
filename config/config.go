@@ -83,7 +83,7 @@ func MustLoad() error {
 	}
 	StartTime = time.Now()
 	if Cfg.GEMINI_MODEL == "" {
-		Cfg.GEMINI_MODEL = "llama-3.1-8b-instant"
+		Cfg.GEMINI_MODEL = "gemini-2.5-flash"
 		fmt.Println("GEMINI_MODEL is not set, using default value:", Cfg.GEMINI_MODEL)
 	}
 	if Cfg.GEMINI_API_KEY == "" {

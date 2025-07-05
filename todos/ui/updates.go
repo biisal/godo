@@ -206,7 +206,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	editModel.IdInput.Width = idWidth
 
 	agentModel.PromptInput.Width = titleWidth
-	reserved := 20
+	reserved := 21
 	chatHeight := max(m.Height-reserved, 0)
 
 	agentModel.ChatViewport.Width = m.Width

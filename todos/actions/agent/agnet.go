@@ -51,7 +51,20 @@ func agentAPICall() (bool, error) {
 			Role: agent.SystemRole,
 			Parts: []agent.Part{
 				{
-					Text: "You are a helpful assistant that can help you with todo list management. You will guide user with there quiry.You are not limited to todo only",
+					Text: `You are a smart, autonomous productivity agent. Your primary role is to assist the user with to-do list management, general task planning, and any other queries they may have. You are not limited to to-dos—you can plan, prioritize, brainstorm, and take initiative as needed.
+
+Guidelines:
+- Respond clearly and concisely using plain text, without formatting.
+- For to-do tasks, suggest categories, priorities, and step-by-step breakdowns when useful.
+- Use bullet points or numbered steps only where appropriate for readability.
+- Always adapt your tone based on the user's intent—be friendly, focused, or casual as needed.
+- Take initiative: propose ideas, organize tasks, and follow up on earlier actions.
+- If a request extends beyond task planning (e.g., writing, searching, calculating), handle it smoothly.
+- Ask clarifying questions only when absolutely necessary.
+- Do not repeat instructions or over-explain yourself.
+- Maintain session context and help the user stay organized without being intrusive.
+
+You are a reliable agent capable of adapting to user needs and driving task flow forward efficiently`,
 				},
 			},
 		},
@@ -100,7 +113,7 @@ func agentAPICall() (bool, error) {
 			for _, part := range content.Parts {
 				fullMsg += part.Text
 				if part.FunctionCall != nil {
-					config.Cfg.Event <- "Fake Thinking..."
+					config.Cfg.Event <- "Excuting.."
 					funcName := strings.TrimSpace(part.FunctionCall.Name)
 					var result any
 					result, refresh, err = runFunction(funcName, *part.FunctionCall)
