@@ -257,7 +257,7 @@ func runFunction(funcName string, tool agent.FunctionCall) (any, bool, error) {
 		if err := mapstructure.Decode(tool.Args, &arg); err != nil {
 			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
 		}
-		_, err = todo.DeleteTodo(arg.Id + 1)
+		_, err = todo.DeleteTodo(arg.Id)
 		if err != nil {
 			return "", refresh, err
 		}
