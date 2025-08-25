@@ -7,68 +7,19 @@ func FormattedFunctions() []agent.Tool {
 		{
 			FunctionDeclarations: []agent.FunctionDeclaration{
 				getFuncFormatted(
-					AddTodoFunc,
-					"Use to add todo in the todos list",
+					PerformSqlFunc,
+					`Execute SQL queries on the SQLite database for the 'todos' table. 
+The table has columns: Id (INTEGER PRIMARY KEY), Title (TEXT), Description (TEXT), Done (BOOLEAN).
+Use SELECT queries to fetch data, INSERT to add todos, UPDATE to modify them, 
+and DELETE to remove them. Always write valid SQLite queries. 
+Only interact with the 'todos' table.`,
 					map[string]agent.Property{
-						"title": {
+						"query": {
 							Type:        "string",
-							Description: "The title of the todo",
-						},
-						"description": {
-							Type:        "string",
-							Description: "The description of the todo",
+							Description: "The sqlite3 query to execute",
 						},
 					},
-					[]string{"title", "description"},
-				),
-				getFuncFormatted(
-					GetTodosInfoFunc,
-					"Returns the todos info [total , completed , remains]",
-					map[string]agent.Property{},
-					[]string{},
-				),
-				getFuncFormatted(
-					GetTodosFunc,
-					"Get all todos with ID, title, description and Completed status",
-					map[string]agent.Property{},
-					[]string{},
-				),
-				getFuncFormatted(
-					ToggleDoneFunc,
-					"Use to update the done status of the todo with fixed value or toggle it",
-					map[string]agent.Property{
-						"id": {
-							Type:        "number",
-							Description: "The id of the todo",
-						},
-						"done": {
-							Type:        "boolean",
-							Description: "The new done status of the todo",
-						},
-					},
-					[]string{"id"},
-				),
-				getFuncFormatted(
-					DeleteTodoFunc,
-					"Delete todo by ID",
-					map[string]agent.Property{
-						"id": {
-							Type:        "number",
-							Description: "The id of the todo",
-						},
-					},
-					[]string{"id"},
-				),
-				getFuncFormatted(
-					GetTodoBYIDFunc,
-					"Get todo by ID",
-					map[string]agent.Property{
-						"id": {
-							Type:        "number",
-							Description: "The id of the todo",
-						},
-					},
-					[]string{"id"},
+					[]string{"query"},
 				),
 			},
 		},

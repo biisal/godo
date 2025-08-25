@@ -17,7 +17,7 @@ func main() {
 	}
 	defer config.Cfg.DB.Close()
 	m := ui.InitialModel()
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	go func() {
 		for msg := range config.Ping {
@@ -27,6 +27,7 @@ func main() {
 		}
 	}()
 
+	tea.ClearScreen()
 	if _, err := p.Run(); err != nil {
 		config.WriteLog(false, err)
 		fmt.Printf("Alas, there's been an error: %v", err)

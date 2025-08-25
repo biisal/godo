@@ -17,6 +17,7 @@ import (
 )
 
 var (
+	PerformSqlFunc   = "PerformSql"
 	AddTodoFunc      = "AddTodo"
 	GetTodosInfoFunc = "GetTodosInfo"
 	GetTodosFunc     = "GetTodos"
@@ -197,71 +198,17 @@ func runFunction(funcName string, tool agent.FunctionCall) (any, bool, error) {
 	var refresh bool
 
 	switch funcName {
-	case AddTodoFunc:
+	case PerformSqlFunc:
 		var args struct {
-			Title       string `json:"title"`
-			Description string `json:"description"`
+			Query string `json:"query"`
 		}
 		if err := mapstructure.Decode(tool.Args, &args); err != nil {
 			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
 		}
-		_, err := todo.AddTodo(args.Title, args.Description)
+		result, err = todo.PerformSqlQuery(args.Query)
 		if err != nil {
 			return "", refresh, err
 		}
-		refresh = true
-		result = fmt.Sprintf("Added todo with title: %s and description: %s", args.Title, args.Description)
-
-	case GetTodosInfoFunc:
-		total, completed, remains, err := todo.GetTodosInfo()
-		result = fmt.Sprintf("Total : %d, Completed : %d, Remaining : %d", total, completed, remains)
-		if err != nil {
-			return "", refresh, err
-		}
-	case GetTodosFunc:
-		todos, err := todo.GetTodos()
-		if err != nil {
-			return "", refresh, err
-		}
-		return todos, refresh, nil
-	case ToggleDoneFunc:
-		var args struct {
-			Id   int  `json:"id"`
-			Done bool `json:"done"`
-		}
-		if err := mapstructure.Decode(tool.Args, &args); err != nil {
-			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
-		}
-		isDone, err := todo.ToggleDone(args.Id-1, args.Done)
-		if err != nil {
-			return "", refresh, err
-		}
-		refresh = true
-		result = fmt.Sprintf("Completed Status set to : %t", isDone)
-	case GetTodoBYIDFunc:
-		var arg struct {
-			Id int `json:"id"`
-		}
-		if err := mapstructure.Decode(tool.Args, &arg); err != nil {
-			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
-		}
-		result, err = todo.GetTodoById(arg.Id + 1)
-		if err != nil {
-			return "", refresh, err
-		}
-
-	case DeleteTodoFunc:
-		var arg struct {
-			Id int `json:"id"`
-		}
-		if err := mapstructure.Decode(tool.Args, &arg); err != nil {
-			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
-		}
-		_, err = todo.DeleteTodo(arg.Id)
-		if err != nil {
-			return "", refresh, err
-		}
-		result = fmt.Sprintf("Deleted todo with id : %d", arg.Id)
 		refresh = true
 	default:
 		return "", refresh, fmt.Errorf("Unknown function %s", funcName)
