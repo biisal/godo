@@ -3,21 +3,32 @@ package styles
 import "github.com/charmbracelet/lipgloss"
 
 const Logo = `
-  ______          __           ___                    __ 
- /_  __/___  ____/ /___       /   | ____ ____  ____  / /_
-  / / / __ \/ __  / __ \     / /| |/ __ \/ _ \/ __ \/ __/
- / / / /_/ / /_/ / /_/ /    / ___ / /_/ /  __/ / / / /_  
-/_/  \____/\__,_/\____/    /_/  |_\__, /\___/_/ /_/\__/  
-                                 /____/                                                                                                                                                   
+   godo     ..----.._    _
+            .' .--.    "-.(O)_
+'-.__.-'"'=:|  ,  _)_ \__ . c\'-..
+             ''------'---''---'-"`
+
+const ChatInstructions = `
+┌──────────── Controls ────────────┐
+│ Ctrl + A     → Back to Todo Mode │
+│ Page Up      → Scroll Up         │
+│ Page Down    → Scroll Down       │
+│ Esc / Ctrl+C → Quit              │
+└──────────────────────────────────┘
 `
 
 var (
+	ChatInputStyle = lipgloss.NewStyle().
+			Background(lipgloss.Color("#130F1A")). // Gray background
+			Foreground(lipgloss.Color("#ffffff")). // White text
+			Padding(0, 1, 2)
 	PurpleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#f8baff")).Bold(true)
+			Foreground(lipgloss.Color("#f8baff")).Background(lipgloss.Color("#130F1A"))
 
-	AgentContentStyle = PurpleStyle.Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#f8baff"))
+	AgentContentStyle = PurpleStyle.Background(lipgloss.Color("#130F1A"))
 	UserContentStyle  = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#99faff")).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#99faff")).Bold(true)
+				Foreground(lipgloss.Color("#99faff")).Background(lipgloss.Color("#130F1A"))
+
 	DescStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#00FFFF")).
 			Border(lipgloss.RoundedBorder()).
@@ -46,3 +57,40 @@ var (
 			Bold(true).Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#00FF9E")).Padding(0, 1)
 )
+
+type Theme struct {
+}
+
+func (t Theme) GetInstructionStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("#29273b")).Foreground(lipgloss.Color("#bebcc4"))
+}
+
+func (t Theme) GetBackground() lipgloss.Color {
+	return lipgloss.Color("#15141a")
+}
+
+func (t Theme) GetUserContentStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#99faff")).
+		Background(lipgloss.Color("#130F1A")).
+		Border(lipgloss.RoundedBorder()).
+		BorderLeft(true).
+		BorderRight(false).
+		BorderTop(false).
+		BorderBottom(false).
+		Padding(0, 1).
+		Margin(1, 1, 0).
+		BorderForeground(lipgloss.Color("#99faff"))
+}
+func (t Theme) GetAgentContentStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#f8baff")).
+		Background(lipgloss.Color("#130F1A")).
+		Border(lipgloss.RoundedBorder()).
+		BorderLeft(true).
+		BorderRight(false).
+		BorderTop(false).
+		Padding(0, 1).
+		BorderBottom(false).
+		BorderForeground(lipgloss.Color("#99faff"))
+}

@@ -5,7 +5,7 @@ import (
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 
-	"github.com/biisal/todo-cli/todos/ui/setup"
+	// "github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -33,6 +33,7 @@ type TeaModel struct {
 	Width         int
 	Height        int
 	Error         error
+	Theme         styles.Theme
 }
 
 func getTitleInput(prompt, placeholder string) textinput.Model {
@@ -63,6 +64,9 @@ func InitialModel() *TeaModel {
 	idInput := textinput.New()
 	idInput.Prompt = "ID > "
 
+	promptInput := textinput.New()
+	promptInput.Focus()
+
 	teaModel := TeaModel{
 		SelectedIndex: 0,
 		Choices:       []todo.Mode{TodoMode, AgentMode},
@@ -82,11 +86,8 @@ func InitialModel() *TeaModel {
 			Choices:       []todo.Mode{TodoListMode, TodoAddMode, TodoEditMode},
 		},
 		AgentModel: agent.AgentModel{
-			PromptInput: getTitleInput("> ", "Ask Agent and perform todo tasks.."),
-			ChatViewport: viewport.Model{
-				Height: 0,
-				Width:  0,
-			},
+			PromptInput:  promptInput,
+			ChatViewport: viewport.Model{},
 		},
 	}
 	teaModel.RefreshList()
@@ -124,13 +125,14 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TeaModel) View() string {
-	s := styles.TitleStyle.Render(styles.Logo) + "\n\n"
-	if m.IsExiting {
-		s += ExitView()
-		return s
-	}
-
-	s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "ctrl+a")
+	var s string
+	// s = styles.TitleStyle.Render(styles.Logo) + "\n\n"
+	// if m.IsExiting {
+	// 	s += ExitView()
+	// 	return s
+	// }
+	//
+	// s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "ctrl+a")
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
 		s += TodoView(m)
@@ -138,14 +140,16 @@ func (m *TeaModel) View() string {
 		s += AgentView(m)
 	}
 
-	if m.Error != nil {
-		s += "\n\n" + styles.ErrorStyle.Width(m.Width-20).Render(m.Error.Error())
-	}
+	// if m.Error != nil {
+	// 	overly := styles.ErrorStyle.Render(m.Error.Error())
+	// 	overly = lipgloss.Place(80, 20, lipgloss.Center, lipgloss.Center, overly)
+	// 	s += overly
+	// }
 	return s
 }
 
 func (m *TeaModel) Init() tea.Cmd {
 	return tea.Batch(
-		waitForActivity(config.Cfg.Event),
+		waitForActivity(config.Cfg.Event), textinput.Blink,
 	)
 }

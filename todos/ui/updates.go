@@ -194,27 +194,29 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	m.Width = msg.Width
 	m.Height = msg.Height
-	titleWidth, descWidth, idWidth := m.Width-60, m.Width-10, m.Width-70
-	addModel, listModel, editModel, agentModel := &m.TodoModel.AddModel, &m.TodoModel.ListModel, &m.TodoModel.EditModel, &m.AgentModel
-	addModel.TitleInput.Width = titleWidth
-	addModel.DescInput.SetWidth(descWidth)
-
-	editModel.TitleInput.Width = titleWidth
-	editModel.DescInput.SetWidth(descWidth)
-	editModel.IdInput.Width = idWidth
-
-	agentModel.PromptInput.Width = titleWidth
-	reserved := 21
-	chatHeight := max(m.Height-reserved, 0)
-
-	agentModel.ChatViewport.Width = m.Width
-	agentModel.ChatViewport.Height = chatHeight
-
-	if m.SelectedIndex == 0 && listModel.List.Height() > 0 {
-		listHeight := listModel.List.Height()
-		listModel.DescViewport.Height = listHeight
-		listModel.DescViewport.Width = m.Width/2 - 9
-	}
+	m.AgentModel.ChatViewport.Width = m.Width
+	m.AgentModel.ChatViewport.Height = m.Height * 85 / 100
+	// titleWidth, descWidth, idWidth := m.Width-60, m.Width-10, m.Width-70
+	// addModel, listModel, editModel, _ := &m.TodoModel.AddModel, &m.TodoModel.ListModel, &m.TodoModel.EditModel, &m.AgentModel
+	// addModel.TitleInput.Width = titleWidth
+	// addModel.DescInput.SetWidth(descWidth)
+	//
+	// editModel.TitleInput.Width = titleWidth
+	// editModel.DescInput.SetWidth(descWidth)
+	// editModel.IdInput.Width = idWidth
+	//
+	// // agentModel.PromptInput.Width = titleWidth
+	// // reserved := 21
+	// // chatHeight := max(m.Height-reserved, 0)
+	//
+	// // agentModel.ChatViewport.Width = m.Width
+	// // agentModel.ChatViewport.Height = chatHeight
+	//
+	// if m.SelectedIndex == 0 && listModel.List.Height() > 0 {
+	// 	listHeight := listModel.List.Height()
+	// 	listModel.DescViewport.Height = listHeight
+	// 	listModel.DescViewport.Width = m.Width/2 - 9
+	// }
 
 }
 

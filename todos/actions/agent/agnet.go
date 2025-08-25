@@ -52,20 +52,41 @@ func agentAPICall() (bool, error) {
 			Role: agent.SystemRole,
 			Parts: []agent.Part{
 				{
-					Text: `You are a smart, autonomous productivity agent. Your primary role is to assist the user with to-do list management, general task planning, and any other queries they may have. You are not limited to to-dos—you can plan, prioritize, brainstorm, and take initiative as needed.
+					Text: `You are a smart, versatile AI assistant with specialized expertise in productivity and task management. While your primary strength is helping users with to-do lists, planning, and organization, you're capable of handling any query or task with intelligence and creativity.
 
-Guidelines:
-- Respond clearly and concisely using plain text, without formatting.
-- For to-do tasks, suggest categories, priorities, and step-by-step breakdowns when useful.
-- Use bullet points or numbered steps only where appropriate for readability.
-- Always adapt your tone based on the user's intent—be friendly, focused, or casual as needed.
-- Take initiative: propose ideas, organize tasks, and follow up on earlier actions.
-- If a request extends beyond task planning (e.g., writing, searching, calculating), handle it smoothly.
-- Ask clarifying questions only when absolutely necessary.
-- Do not repeat instructions or over-explain yourself.
-- Maintain session context and help the user stay organized without being intrusive.
+## Core Capabilities:
+- **Productivity & Planning**: Todo management, task prioritization, project planning, time management, goal setting
+- **Knowledge & Research**: Answer questions on any topic, explain complex concepts, provide analysis
+- **Writing & Content**: Create documents, emails, reports, creative writing, editing, summarization  
+- **Problem Solving**: Debug issues, provide solutions, break down complex problems, strategic thinking
+- **Coding & Technical**: Write code, explain programming concepts, troubleshoot technical issues
+- **Creative Tasks**: Brainstorming, ideation, creative projects, design thinking
+- **Analysis & Data**: Process information, identify patterns, make recommendations, data interpretation
 
-You are a reliable agent capable of adapting to user needs and driving task flow forward efficiently`,
+## Communication Guidelines:
+- **Clarity First**: Respond clearly and concisely, adapting complexity to user needs
+- **Context Aware**: Remember conversation history and build upon previous interactions
+- **Proactive**: Take initiative, suggest improvements, anticipate needs, offer relevant follow-ups
+- **Adaptive Tone**: Match the user's intent - professional for work, casual for chat, focused for tasks
+- **Efficient**: Be direct when appropriate, detailed when needed, never unnecessarily verbose
+- **Format Smart**: Use formatting (bullets, numbers, code blocks) when it improves readability
+- **Solution Oriented**: Focus on actionable outcomes and practical next steps
+
+## Interaction Style:
+- Ask clarifying questions only when truly necessary to provide better help
+- Offer multiple approaches when relevant
+- Provide examples and practical applications
+- Maintain conversational flow while staying helpful
+- Be encouraging and supportive, especially for productivity and learning goals
+- Remember user preferences and adapt over time within the conversation
+
+## Special Focus Areas:
+- **Task Planning**: Break complex projects into manageable steps with priorities and timelines
+- **Productivity**: Suggest systems, techniques, and optimizations for better efficiency  
+- **Organization**: Help structure information, workflows, and processes
+- **Learning**: Explain concepts clearly, provide resources, support skill development
+
+You are a reliable, intelligent companion capable of seamlessly switching between productivity coaching, general assistance, creative collaboration, and technical support based on what the user needs most.`,
 				},
 			},
 		},
@@ -96,6 +117,8 @@ You are a reliable agent capable of adapting to user needs and driving task flow
 	scanner.Buffer(buf, len(buf))
 
 	var fullMsg string
+	var hasFunctionCall bool
+
 	for scanner.Scan() {
 		data := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "data: "))
 		if data == "" || !strings.HasPrefix(data, "{") {
@@ -104,63 +127,82 @@ You are a reliable agent capable of adapting to user needs and driving task flow
 		if err := json.Unmarshal([]byte(data), &msgStruct); err != nil {
 			return refresh, fmt.Errorf("failed to unmarshal message: %w", err)
 		}
-		lastIndex := max(len(History)-1, 0)
+
 		for _, candidate := range msgStruct.Candidates {
-			content := candidate.Content
-			if lastIndex == 0 || History[lastIndex].Role != agent.ModelRole {
-				History = append(History, content)
-				lastIndex = len(History) - 1
-			}
-			for _, part := range content.Parts {
-				fullMsg += part.Text
+			for _, part := range candidate.Content.Parts {
+				// Handle text content
+				if part.Text != "" {
+					fullMsg += part.Text
+				}
+
+				// Handle function calls
 				if part.FunctionCall != nil {
+					hasFunctionCall = true
 					config.Cfg.Event <- "Excuting.."
 					funcName := strings.TrimSpace(part.FunctionCall.Name)
+
+					// First, add any accumulated text as a separate content entry
+					if fullMsg != "" {
+						History = append(History, agent.Content{
+							Role: agent.ModelRole,
+							Parts: []agent.Part{
+								{
+									Text: fullMsg,
+								},
+							},
+						})
+						fullMsg = "" // Reset after adding
+					}
+
+					// Execute the function
 					var result any
 					result, refresh, err = runFunction(funcName, *part.FunctionCall)
 					if err != nil {
 						result = err.Error()
 					}
-					History = append(History, []agent.Content{
-						{
-							Role: "model",
-							Parts: []agent.Part{
-								{
-									FunctionCall: part.FunctionCall,
+
+					// Add the model's function call to history
+					History = append(History, agent.Content{
+						Role: agent.ModelRole,
+						Parts: []agent.Part{
+							{
+								FunctionCall: part.FunctionCall,
+							},
+						},
+					})
+
+					// Add the function response to history
+					History = append(History, agent.Content{
+						Role: agent.FunctionRole,
+						Parts: []agent.Part{
+							{
+								FunctionResponse: &agent.FunctionResponse{
+									ID:       part.FunctionCall.ID,
+									Name:     funcName,
+									Response: map[string]any{"output": result},
 								},
 							},
-						}, {
-							Role: agent.FunctionRole,
-							Parts: []agent.Part{
-								{
-									FunctionResponse: &agent.FunctionResponse{
-										ID:       part.FunctionCall.ID,
-										Name:     "add",
-										Response: map[string]any{"output": result},
-									},
-								},
-							},
-						}}...,
-					)
-					agentAPICall()
+						},
+					})
+
+					// Recursively call to get the model's response to the function result
+					return agentAPICall()
 				}
 			}
 		}
-		if History[lastIndex].Role != agent.ModelRole {
-			History = append(History, agent.Content{
-				Role: agent.ModelRole,
-				Parts: []agent.Part{
-					{
-						Text: fullMsg,
-					},
-				},
-			})
-			lastIndex = len(History) - 1
-		} else {
-			History[lastIndex].Parts[0].Text = fullMsg
-		}
 		config.Ping <- ""
+	}
 
+	// Add any remaining text content after processing all chunks
+	if fullMsg != "" && !hasFunctionCall {
+		History = append(History, agent.Content{
+			Role: agent.ModelRole,
+			Parts: []agent.Part{
+				{
+					Text: fullMsg,
+				},
+			},
+		})
 	}
 	return refresh, nil
 }
@@ -189,7 +231,6 @@ func AgentResponse(prompt string) ([]agent.Content, bool, error) {
 	}()
 
 	return History, refresh, nil
-
 }
 
 func runFunction(funcName string, tool agent.FunctionCall) (any, bool, error) {
@@ -212,8 +253,6 @@ func runFunction(funcName string, tool agent.FunctionCall) (any, bool, error) {
 		refresh = true
 	default:
 		return "", refresh, fmt.Errorf("Unknown function %s", funcName)
-
 	}
 	return result, refresh, nil
-
 }
