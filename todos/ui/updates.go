@@ -22,9 +22,11 @@ var WrongTypeIdError = errors.New("ID Should be a number")
 
 func SetUpDefalutKeys(key string, m *TeaModel) {
 	switch key {
-	case "alt+right":
+	case "ctrl+a":
 		if len(m.Choices) > m.SelectedIndex+1 {
 			m.SelectedIndex++
+		} else {
+			m.SelectedIndex = 0
 		}
 	case "ctrl+right":
 		if len(m.TodoModel.Choices) > m.TodoModel.SelectedIndex+1 {
@@ -33,10 +35,6 @@ func SetUpDefalutKeys(key string, m *TeaModel) {
 	case "ctrl+left":
 		if m.TodoModel.SelectedIndex > 0 {
 			m.TodoModel.SelectedIndex--
-		}
-	case "alt+left":
-		if m.SelectedIndex > 0 {
-			m.SelectedIndex--
 		}
 	}
 }

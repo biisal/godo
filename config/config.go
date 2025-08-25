@@ -1,6 +1,7 @@
 package config
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Config struct {
@@ -17,6 +19,9 @@ type Config struct {
 	GEMINI_API_KEY string `env:"GEMINI_API_KEY"`
 	ENVIRONMENT    string `env:"ENVIRONMENT"`
 	Event          chan string
+	DB_PATH        string
+	DB_NAME        string
+	DB             *sql.DB
 }
 
 var (
@@ -74,7 +79,7 @@ func MustLoad() error {
 		return fmt.Errorf("Failed to get user home directory for writing logs and todos: %s", err.Error())
 	}
 
-	if err := loadEnv([]string{"./.env", HomeDIR + "/.local/share/godo/.env"}); err != nil {
+	if err := loadEnv([]string{HomeDIR + "/.local/share/godo/.env", "./.env"}); err != nil {
 		return err
 	}
 
@@ -105,6 +110,33 @@ func MustLoad() error {
 	}
 	Cfg.Event = make(chan string, 100)
 	Cfg.Event <- ":)"
+	if Cfg.DB_PATH == "" {
+		if Cfg.DB_NAME == "" {
+			Cfg.DB_NAME = "todo.db"
+		}
+		Cfg.DB_PATH = HomeDIR + "/local/share/godo/" + Cfg.DB_NAME
+	}
+	if err = initDb(); err != nil {
+		return err
+	}
+	return nil
+}
 
+func initDb() error {
+	db, err := sql.Open("sqlite3", Cfg.DB_PATH)
+	if err != nil {
+		return err
+	}
+	sqlStmt := `
+	CREATE TABLE IF NOT EXISTS todos (
+		Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		Title TEXT NOT NULL,
+		Description TEXT NOT NULL,
+		Done BOOLEAN NOT NULL DEFAULT FALSE
+	)`
+	if _, err = db.Exec(sqlStmt); err != nil {
+		return err
+	}
+	Cfg.DB = db
 	return nil
 }

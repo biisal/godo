@@ -23,11 +23,6 @@ var (
 	TodoListMode = todo.Mode{Value: "todoListMode", Label: "Todo List"}
 )
 
-type item struct {
-	id          int
-	title, desc string
-}
-
 type TeaModel struct {
 	IsExiting     bool
 	EventMsg      string
@@ -135,7 +130,7 @@ func (m *TeaModel) View() string {
 		return s
 	}
 
-	s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "alt+right/left")
+	s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "ctrl+a")
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
 		s += TodoView(m)

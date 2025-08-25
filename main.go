@@ -10,10 +10,12 @@ import (
 )
 
 func main() {
+	fmt.Println("config are set up")
 	if err := config.MustLoad(); err != nil {
 		fmt.Printf("Failed To Load Config %v: ", err)
 		os.Exit(1)
 	}
+	defer config.Cfg.DB.Close()
 	m := ui.InitialModel()
 	p := tea.NewProgram(m)
 
