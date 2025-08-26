@@ -10,10 +10,10 @@ import (
 	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/todo"
-	"github.com/biisal/todo-cli/todos/ui/styles"
+	// "github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
+	// "github.com/charmbracelet/bubbles/spinner"
+	// "github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -217,6 +217,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	// 	listModel.DescViewport.Height = listHeight
 	// 	listModel.DescViewport.Width = m.Width/2 - 9
 	// }
+	m.RefreshList()
 
 }
 
@@ -236,57 +237,33 @@ func (m *TeaModel) updateDescriptionContent() {
 
 func (m *TeaModel) RefreshList() {
 	defer func() {
-		m.updateDescriptionContent()
-		m.TodoModel.ListModel.List.SetShowStatusBar(false)
+		// m.updateDescriptionContent()
+		// m.TodoModel.ListModel.List.SetShowStatusBar(false)
 
 	}()
 	todos, _ := todoAction.GetTodos()
-	totalTodos := len(todos)
-	items := []list.Item{}
-	for _, todo := range todos {
-		items = append(items, todo)
-	}
-	if m.TodoModel.ListModel.List.Height() == 0 {
-		h, _ := styles.DocStyle.GetFrameSize()
-		todoList := list.New(items, todo.TodoListDelegate{}, 0, h*3)
-		sp := spinner.New()
-		todoList.SetShowHelp(false)
-		todoList.Title = "TODO LIST"
-		todoList.Styles.Title = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00FFFF")).
-			Bold(true).
-			Underline(true)
-		todoList.SetShowPagination(true)
-		todoList.SetSpinner(sp.Spinner)
-
-		m.TodoModel.ListModel.List = todoList
-		m.TodoModel.ListModel.List.ToggleSpinner()
-
-		listHeight := todoList.Height()
-		viewportHeight := listHeight - 4 // Account for border and padding
-		vp := viewport.New(m.Width/2-9, viewportHeight)
-		m.TodoModel.ListModel.DescViewport = vp
-
-	} else {
-		m.TodoModel.ListModel.List.SetItems(items)
-	}
-	if totalTodos == 0 {
-		return
-	}
 	doneCount := 0
+	// totalTodos := len(todos)
+	items := []list.Item{}
 	for _, todo := range todos {
 		if todo.Done {
 			doneCount++
 		}
+		items = append(items, todo)
 	}
-	statusText := fmt.Sprintf("\n\n[%d/%d] Done", doneCount, len(todos))
-	var status string
-	if doneCount > totalTodos/2 {
-		status = styles.GreenStyle.Render(statusText)
-	} else {
-		status = styles.RedStyle.Render(statusText)
-	}
-	m.TodoModel.ListModel.List.NewStatusMessage(status)
+	m.TodoModel.ListModel.List = list.New(items, list.NewDefaultDelegate(), m.Width*40/100, m.Height*75/100)
+
+	// if totalTodos == 0 {
+	// 	return
+	// }
+	// statusText := fmt.Sprintf("\n\n[%d/%d] Done", doneCount, len(todos))
+	// var status string
+	// if doneCount > totalTodos/2 {
+	// 	status = styles.GreenStyle.Background(m.Theme.GetBackground()).Width(m.TodoModel.ListModel.List.Width()).Render(statusText)
+	// } else {
+	// 	status = styles.RedStyle.Background(m.Theme.GetBackground()).Render(statusText)
+	// }
+	// m.TodoModel.ListModel.List.NewStatusMessage(status)
 
 }
 

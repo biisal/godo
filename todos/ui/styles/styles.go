@@ -91,6 +91,14 @@ func (t Theme) GetAgentContentStyle() lipgloss.Style {
 		BorderRight(false).
 		BorderTop(false).
 		Padding(0, 1).
+		Margin(1, 1, 2).
 		BorderBottom(false).
-		BorderForeground(lipgloss.Color("#99faff"))
+		BorderForeground(lipgloss.Color("#f8baff"))
+}
+func (t Theme) GetBorderColor() lipgloss.Color {
+	return lipgloss.Color("#89b4fa")
+}
+
+func (t Theme) GetTestRedColor() lipgloss.Color {
+	return lipgloss.Color("#FF0000")
 }

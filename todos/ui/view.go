@@ -3,20 +3,32 @@ package ui
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/biisal/todo-cli/config"
 	agentaction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoaction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
-	"github.com/biisal/todo-cli/todos/models/todo"
-	"github.com/biisal/todo-cli/todos/ui/setup"
+	// "github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 )
 
+func RenderListView(m *TeaModel) string {
+	listView := m.TodoModel.ListModel.List.View()
+
+	return lipgloss.Place(
+		m.Width,
+		m.Height,
+		lipgloss.Left,
+		lipgloss.Top,
+		lipgloss.NewStyle().
+			Background(m.Theme.GetBackground()).
+			Width(m.Width).
+			Render(listView),
+	)
+}
 func TodoView(m *TeaModel) string {
 	var s string
 	switch m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
@@ -33,36 +45,7 @@ func TodoView(m *TeaModel) string {
 		}
 
 	case TodoListMode.Value:
-		listModel := m.TodoModel.ListModel
-		listModel.List.SetWidth(m.Width/2 - 5)
-
-		var rightContent = "Description:\n"
-		if selectedItem := listModel.List.SelectedItem(); selectedItem != nil {
-			if i, ok := selectedItem.(todo.Todo); ok {
-				rightContent += i.Description()
-			}
-		}
-		separator := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#89b4fa")).
-			Width(m.Width).
-			Render(strings.Repeat("─ ", m.Width/2)) + "\n"
-		leftStyle := lipgloss.NewStyle().
-			Width(m.Width/2 - 5).
-			Height(listModel.List.Height()).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa"))
-		listHeight := listModel.List.Height()
-
-		rightStyle := lipgloss.NewStyle().
-			Width(m.Width/2 - 5).
-			Height(listHeight).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#89b4fa"))
-
-		rightSide := rightStyle.Render(m.TodoModel.ListModel.DescViewport.View())
-		view := lipgloss.JoinHorizontal(lipgloss.Center, leftStyle.Render(listModel.List.View()), rightSide)
-		s += view + "\n" + separator
-
+		s = RenderListView(m)
 	case TodoEditMode.Value:
 		titleInput := m.TodoModel.EditModel.TitleInput
 		descInput := m.TodoModel.EditModel.DescInput
@@ -83,8 +66,8 @@ func TodoView(m *TeaModel) string {
 		}
 
 	}
-	s += "\n\n"
-	s += setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex, "ctrl+right/left")
+	// s += "\n\n"
+	// s += setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex, "ctrl+right/left")
 
 	return s
 }
@@ -112,7 +95,7 @@ func AgentView(m *TeaModel) string {
 			if msg.Role == agent.UserRole {
 				chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
 			} else {
-				chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content) + "\n"
+				chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
 			}
 		}
 	}
@@ -148,7 +131,7 @@ func AgentView(m *TeaModel) string {
 		lipgloss.NewStyle().Background(m.Theme.GetBackground()).Width(m.Width/2).Render(middleLeft),
 		lipgloss.NewStyle().Background(m.Theme.GetBackground()).Width(m.Width/2).AlignHorizontal(lipgloss.Right).Render(middleRight),
 	)
-	s += lipgloss.NewStyle().Width(m.Width).Height(m.Height).Background(m.Theme.GetBackground()).Render(lipgloss.JoinVertical(lipgloss.Top, topPart, middle, bottomPart))
+	s += lipgloss.JoinVertical(lipgloss.Top, topPart, middle, bottomPart)
 	return s
 }
 

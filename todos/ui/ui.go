@@ -66,7 +66,6 @@ func InitialModel() *TeaModel {
 
 	promptInput := textinput.New()
 	promptInput.Focus()
-
 	teaModel := TeaModel{
 		SelectedIndex: 0,
 		Choices:       []todo.Mode{TodoMode, AgentMode},
@@ -96,7 +95,9 @@ func InitialModel() *TeaModel {
 
 func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-
+	var cmd tea.Cmd
+	m.TodoModel.ListModel.List, cmd = m.TodoModel.ListModel.List.Update(msg)
+	cmds = append(cmds, cmd)
 	switch msg := msg.(type) {
 	// case agent.AgentResTeaMsg:
 	// 	if msg.Error != nil {
@@ -126,18 +127,11 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TeaModel) View() string {
 	var s string
-	// s = styles.TitleStyle.Render(styles.Logo) + "\n\n"
-	// if m.IsExiting {
-	// 	s += ExitView()
-	// 	return s
-	// }
-	//
-	// s += setup.SetUpChoice(m.Choices, m.SelectedIndex, "ctrl+a")
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
-		s += TodoView(m)
+		s = TodoView(m)
 	case AgentMode.Value:
-		s += AgentView(m)
+		s = AgentView(m)
 	}
 
 	// if m.Error != nil {
@@ -145,6 +139,7 @@ func (m *TeaModel) View() string {
 	// 	overly = lipgloss.Place(80, 20, lipgloss.Center, lipgloss.Center, overly)
 	// 	s += overly
 	// }
+	s += lipgloss.NewStyle().Background(m.Theme.GetBackground()).Width(m.Width).Height(m.Height).Render(s)
 	return s
 }
 
