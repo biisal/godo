@@ -21,7 +21,9 @@ var (
 func GetTodos() ([]todo.Todo, error) {
 	sqlStmt := `
 	SELECT Id , Title, Description, Done
-	FROM todos`
+	FROM todos
+	ORDER BY Id DESC
+	`
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,9 @@
 package styles
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/lipgloss"
+)
 
 const Logo = `
    godo     ..----.._    _
@@ -19,15 +22,18 @@ const ChatInstructions = `
 
 var (
 	ChatInputStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("#130F1A")). // Gray background
-			Foreground(lipgloss.Color("#ffffff")). // White text
-			Padding(0, 1, 2)
+		// Background(lipgloss.Color("#130F1A")). // Gray background
+		Foreground(lipgloss.Color("#ffffff")). // White text
+		Padding(0, 1, 2)
 	PurpleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#f8baff")).Background(lipgloss.Color("#130F1A"))
+			Foreground(lipgloss.Color("#f8baff"))
+		// Background(lipgloss.Color("#130F1A"))
 
-	AgentContentStyle = PurpleStyle.Background(lipgloss.Color("#130F1A"))
-	UserContentStyle  = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#99faff")).Background(lipgloss.Color("#130F1A"))
+	AgentContentStyle = PurpleStyle
+	// Background(lipgloss.Color("#130F1A"))
+	UserContentStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#99faff"))
+		// Background(lipgloss.Color("#130F1A"))
 
 	DescStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#00FFFF")).
@@ -58,7 +64,10 @@ var (
 			BorderForeground(lipgloss.Color("#00FF9E")).Padding(0, 1)
 )
 
+type ListTheme struct {
+}
 type Theme struct {
+	ListTheme ListTheme
 }
 
 func (t Theme) GetInstructionStyle() lipgloss.Style {
@@ -72,7 +81,7 @@ func (t Theme) GetBackground() lipgloss.Color {
 func (t Theme) GetUserContentStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#99faff")).
-		Background(lipgloss.Color("#130F1A")).
+		// Background(lipgloss.Color("#130F1A")).
 		Border(lipgloss.RoundedBorder()).
 		BorderLeft(true).
 		BorderRight(false).
@@ -85,7 +94,7 @@ func (t Theme) GetUserContentStyle() lipgloss.Style {
 func (t Theme) GetAgentContentStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#f8baff")).
-		Background(lipgloss.Color("#130F1A")).
+		// Background(lipgloss.Color("#130F1A")).
 		Border(lipgloss.RoundedBorder()).
 		BorderLeft(true).
 		BorderRight(false).
@@ -96,9 +105,53 @@ func (t Theme) GetAgentContentStyle() lipgloss.Style {
 		BorderForeground(lipgloss.Color("#f8baff"))
 }
 func (t Theme) GetBorderColor() lipgloss.Color {
-	return lipgloss.Color("#89b4fa")
+	return lipgloss.Color("#666666")
 }
 
 func (t Theme) GetTestRedColor() lipgloss.Color {
 	return lipgloss.Color("#FF0000")
+}
+func (t Theme) GetPurpleColoe() lipgloss.Color {
+	return lipgloss.Color("#f8baff")
+}
+func (t Theme) GetGrayColor() lipgloss.Color {
+	return lipgloss.Color("#AEAEAE")
+}
+func (t *Theme) GetGreenColor() lipgloss.Color {
+	return lipgloss.Color("#00FF70")
+}
+func (t Theme) ListCustomDelegate(width int) list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	bg := t.GetBackground()
+	defaltStyle := lipgloss.NewStyle().Background(bg).Padding(0, 2).Width(width)
+	// Override title and description
+	d.Styles.NormalTitle = defaltStyle
+	d.Styles.NormalDesc = defaltStyle
+	d.Styles.SelectedTitle = defaltStyle.Bold(true).Foreground(lipgloss.Color("#ffffff"))
+	d.Styles.SelectedDesc = defaltStyle
+
+	return d
+}
+
+func (lt *ListTheme) RowStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#AEAEAE")).
+		// Background(lipgloss.Color("#130F1A")).
+		Border(lipgloss.RoundedBorder()).
+		BorderLeft(true).
+		BorderRight(false).
+		BorderTop(false).
+		BorderBottom(false).
+		Padding(0, 1).
+		Margin(1, 1, 0).
+		BorderForeground(lipgloss.Color("#f8baff"))
+}
+
+func (lt *ListTheme) SelectedColor() lipgloss.Color {
+	return lipgloss.Color("#f8baff")
+}
+
+func (t *Theme) TitleBackround() lipgloss.Color {
+	return lipgloss.Color("#f8baff")
+
 }

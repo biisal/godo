@@ -1,0 +1,114 @@
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:263: THE WIDTH IS : 0
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:230: SELECTED ITEM {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:232: MATCHED {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Not Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : hm looking nice btw 
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:203: === UpdateOnSize: Window resized to 148x32 ===
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:212: Usable area - Width: 148, Height: 32
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:219: Chat viewport set to - Width: 148, Height: 25 (80% of 32)
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:263: THE WIDTH IS : 88
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:223: === UpdateOnSize: Complete ===
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:230: SELECTED ITEM {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:232: MATCHED {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Not Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : hm looking nice btw 
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:230: SELECTED ITEM {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:232: MATCHED {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Not Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : hm looking nice btw 
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:230: SELECTED ITEM {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:232: MATCHED {32 this is a new todo and this is good hm looking nice btw false}
+[GODO-AGENT]2025/08/29 21:37:33 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Not Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : hm looking nice btw 
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:230: SELECTED ITEM {31 Plan for Tomorrow Organize tasks and priorities for the next day false}
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:232: MATCHED {31 Plan for Tomorrow Organize tasks and priorities for the next day false}
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Not Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Organize tasks and priorities for the next day 
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:34 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:36 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:36 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:36 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:36 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:37 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:37 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:37 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:37 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:38 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:39 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 
+[GODO-AGENT]2025/08/29 21:37:40 updates.go:118: ERROR GETTING ITEM WITH id  30  :  Invalid ID
+[GODO-AGENT]2025/08/29 21:37:40 updates.go:230: SELECTED ITEM {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:40 updates.go:232: MATCHED {30 Learning and Development Spend time learning new technologies or concepts true}
+[GODO-AGENT]2025/08/29 21:37:40 updates.go:240: RIGHT CONTENT IS :  [48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mStatus[0m[48;2;248;186;255m [0m : Compelted
+
+[48;2;248;186;255m [0m[1;38;2;0;0;0;48;2;248;186;255mDescription[0m[48;2;248;186;255m [0m : Spend time learning new technologies or concepts 

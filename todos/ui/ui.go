@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"log"
+
 	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
@@ -34,6 +36,8 @@ type TeaModel struct {
 	Height        int
 	Error         error
 	Theme         styles.Theme
+	BgStyle       lipgloss.Style
+	fLogger       *log.Logger
 }
 
 func getTitleInput(prompt, placeholder string) textinput.Model {
@@ -60,13 +64,14 @@ func waitForActivity(ev chan string) tea.Cmd {
 	}
 }
 
-func InitialModel() *TeaModel {
+func InitialModel(fLogger *log.Logger) *TeaModel {
 	idInput := textinput.New()
 	idInput.Prompt = "ID > "
 
 	promptInput := textinput.New()
 	promptInput.Focus()
 	teaModel := TeaModel{
+		fLogger:       fLogger,
 		SelectedIndex: 0,
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
@@ -139,7 +144,7 @@ func (m *TeaModel) View() string {
 	// 	overly = lipgloss.Place(80, 20, lipgloss.Center, lipgloss.Center, overly)
 	// 	s += overly
 	// }
-	s += lipgloss.NewStyle().Background(m.Theme.GetBackground()).Width(m.Width).Height(m.Height).Render(s)
+	// s += m.BgStyle.Render(s)
 	return s
 }
 
