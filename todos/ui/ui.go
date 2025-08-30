@@ -1,13 +1,11 @@
 package ui
 
 import (
-	"log"
-
 	"github.com/biisal/todo-cli/config"
+	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
 
-	// "github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -37,7 +35,7 @@ type TeaModel struct {
 	Error         error
 	Theme         styles.Theme
 	BgStyle       lipgloss.Style
-	fLogger       *log.Logger
+	fLogger       *logger.Logger
 }
 
 func getTitleInput(prompt, placeholder string) textinput.Model {
@@ -64,7 +62,7 @@ func waitForActivity(ev chan string) tea.Cmd {
 	}
 }
 
-func InitialModel(fLogger *log.Logger) *TeaModel {
+func InitialModel(fLogger *logger.Logger) *TeaModel {
 	idInput := textinput.New()
 	idInput.Prompt = "ID > "
 
@@ -104,14 +102,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.TodoModel.ListModel.List, cmd = m.TodoModel.ListModel.List.Update(msg)
 	cmds = append(cmds, cmd)
 	switch msg := msg.(type) {
-	// case agent.AgentResTeaMsg:
-	// 	if msg.Error != nil {
-	// 		m.ShowError(msg.Error, &cmds)
-	// 		return m, nil
-	// 	}
-	// 	m.AgentModel.PromptInput.SetValue("")
-	// 	m.AgentModel.History = msg.History
-	// 	return m, nil
 	case clearErrorMsg:
 		m.Error = nil
 		return m, nil
@@ -139,12 +129,6 @@ func (m *TeaModel) View() string {
 		s = AgentView(m)
 	}
 
-	// if m.Error != nil {
-	// 	overly := styles.ErrorStyle.Render(m.Error.Error())
-	// 	overly = lipgloss.Place(80, 20, lipgloss.Center, lipgloss.Center, overly)
-	// 	s += overly
-	// }
-	// s += m.BgStyle.Render(s)
 	s += HelpBarView(m)
 	return s
 }

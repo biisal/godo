@@ -10,22 +10,12 @@ import (
 	todoaction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 
-	// "github.com/biisal/todo-cli/todos/ui/setup"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 )
 
 func RenderListView(m *TeaModel) string {
-	// return lipgloss.Place(
-	// 	m.Width,
-	// 	m.Height,
-	// 	lipgloss.Left,
-	// 	lipgloss.Top,
-	// 	lipgloss.NewStyle().
-	// 		Width(m.Width).Background(m.Theme.GetBackground()).
-	// 		Render(m.TodoModel.ListModel.List.View()),
-	// )
 	left := lipgloss.NewStyle().Width(m.Width * 60 / 100).PaddingTop(1).Render(m.TodoModel.ListModel.List.View())
 	m.UpdateDescriptionContent()
 	right := lipgloss.NewStyle().Width(m.Width-lipgloss.Width(left)).Border(lipgloss.RoundedBorder()).
@@ -75,22 +65,15 @@ func TodoView(m *TeaModel) string {
 		}
 
 	}
-	// s += "\n\n"
-	// s += setup.SetUpChoice(m.TodoModel.Choices, m.TodoModel.SelectedIndex, "ctrl+right/left")
-
 	return s
 }
 
 func AgentView(m *TeaModel) string {
-	m.fLogger.Println("=== AgentView: Starting render ===")
-	m.fLogger.Printf("Screen dimensions - Width: %d, Height: %d", m.Width, m.Height)
-
 	var chatContent string
 	historyLen := len(agentaction.History)
-	m.fLogger.Printf("Chat history length: %d", historyLen)
 
 	if historyLen == 0 {
-		m.fLogger.Println("No history - showing welcome screen")
+		m.fLogger.Info("No history - showing welcome screen")
 		logo := styles.Logo + styles.ChatInstructions
 		chatContent = styles.PurpleStyle.
 			AlignHorizontal(lipgloss.Center).
@@ -99,11 +82,11 @@ func AgentView(m *TeaModel) string {
 			Width(m.AgentModel.ChatViewport.Width).
 			Render(logo)
 	} else {
-		m.fLogger.Println("Processing chat history...")
+		m.fLogger.Info("Processing chat history...")
 		processedMsgs := 0
 		for i, msg := range agentaction.History {
 			if msg.IsToolReq {
-				m.fLogger.Printf("Skipping tool request message at index %d", i)
+				m.fLogger.FInfo("Skipping tool request message at index %d", i)
 				continue
 			}
 
@@ -113,20 +96,20 @@ func AgentView(m *TeaModel) string {
 			}
 
 			if content == "" {
-				m.fLogger.Printf("Skipping empty message at index %d", i)
+				m.fLogger.FInfo("Skipping empty message at index %d", i)
 				continue
 			}
 
 			if msg.Role == agent.UserRole {
-				m.fLogger.Printf("Rendering user message %d", i)
+				m.fLogger.FInfo("Rendering user message %d", i)
 				chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
 			} else {
-				m.fLogger.Printf("Rendering agent message %d", i)
+				m.fLogger.FInfo("Rendering agent message %d", i)
 				chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
 			}
 			processedMsgs++
 		}
-		m.fLogger.Printf("Processed %d messages", processedMsgs)
+		m.fLogger.FInfo("Processed %d messages", processedMsgs)
 	}
 
 	m.AgentModel.ChatViewport.SetContent(chatContent)
@@ -135,22 +118,22 @@ func AgentView(m *TeaModel) string {
 	chatstyle := lipgloss.NewStyle()
 
 	cWidth, cHeight := chatstyle.GetFrameSize()
-	m.fLogger.Printf("Chat frame size - Width: %d, Height: %d", cWidth, cHeight)
+	m.fLogger.FInfo("Chat frame size - Width: %d, Height: %d", cWidth, cHeight)
 
 	outerHeight := m.AgentModel.ChatViewport.Height
-	m.fLogger.Printf("Original viewport height: %d", outerHeight)
+	m.fLogger.FInfo("Original viewport height: %d", outerHeight)
 
 	// Adjust viewport for border
 	m.AgentModel.ChatViewport.Width = m.Width - cWidth
 	m.AgentModel.ChatViewport.Height = outerHeight - cHeight
-	m.fLogger.Printf("Adjusted viewport - Width: %d, Height: %d",
+	m.fLogger.FInfo("Adjusted viewport - Width: %d, Height: %d",
 		m.AgentModel.ChatViewport.Width, m.AgentModel.ChatViewport.Height)
 
 	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
 
 	// Restore viewport height
 	m.AgentModel.ChatViewport.Height = outerHeight
-	m.fLogger.Printf("Viewport height restored to: %d", outerHeight)
+	m.fLogger.FInfo("Viewport height restored to: %d", outerHeight)
 
 	// Top section
 	topPart := lipgloss.Place(
@@ -171,16 +154,16 @@ func AgentView(m *TeaModel) string {
 	)
 
 	middleHeight := lipgloss.Height(middle)
-	m.fLogger.Printf("Middle section height: %d", middleHeight)
+	m.fLogger.FInfo("Middle section height: %d", middleHeight)
 
 	// Bottom section (input)
 	inputHeight := m.Height - outerHeight - middleHeight
-	m.fLogger.Printf("Input height calculation: %d - %d - %d = %d",
+	m.fLogger.FInfo("Input height calculation: %d - %d - %d = %d",
 		m.Height, outerHeight, middleHeight, inputHeight)
 
 	if inputHeight < 1 {
 		inputHeight = 1
-		m.fLogger.Println("Input height set to minimum: 1")
+		m.fLogger.Info("Input height set to minimum: 1")
 	}
 
 	inputView := styles.ChatInputStyle.
@@ -208,21 +191,15 @@ func AgentView(m *TeaModel) string {
 
 	// Final verification and adjustment
 	totalHeight := lipgloss.Height(result)
-	m.fLogger.Printf("Final height - Expected: %d, Actual: %d", m.Height, totalHeight)
+	m.fLogger.FInfo("Final height - Expected: %d, Actual: %d", m.Height, totalHeight)
 
 	if totalHeight > m.Height {
 		overflow := totalHeight - m.Height
-		m.fLogger.Printf("WARNING: Content exceeds screen height by %d pixels", overflow)
+		m.fLogger.FInfo("WARNING: Content exceeds screen height by %d pixels", overflow)
 
-		// Reduce input height by overflow amount
-		adjustedInputHeight := inputHeight - overflow
-		if adjustedInputHeight < 1 {
-			adjustedInputHeight = 1
-		}
+		adjustedInputHeight := max(inputHeight-overflow, 1)
+		m.fLogger.FInfo("Adjusting input height: %d -> %d", inputHeight, adjustedInputHeight)
 
-		m.fLogger.Printf("Adjusting input height: %d -> %d", inputHeight, adjustedInputHeight)
-
-		// Recreate input with adjusted height
 		adjustedInputView := styles.ChatInputStyle.
 			AlignHorizontal(lipgloss.Left).
 			Width(m.Width).
@@ -243,14 +220,13 @@ func AgentView(m *TeaModel) string {
 			adjustedInputView,
 		)
 
-		// Rejoin with adjusted input
 		result = lipgloss.JoinVertical(lipgloss.Top, topPart, middle, adjustedBottomPart)
 
 		finalHeight := lipgloss.Height(result)
-		m.fLogger.Printf("After adjustment - Final height: %d", finalHeight)
+		m.fLogger.FInfo("After adjustment - Final height: %d", finalHeight)
 	}
 
-	m.fLogger.Println("=== AgentView: Render complete ===")
+	m.fLogger.Info("=== AgentView: Render complete ===")
 	return result
 }
 func ExitView() string {
@@ -286,6 +262,6 @@ func ExitView() string {
 func HelpBarView(m *TeaModel) string {
 	var s string
 	s += lipgloss.NewStyle().Width(m.Width).Background(m.Theme.GetBackground()).Foreground(lipgloss.Color("#ffffff")).Render("this is a help test")
-	m.fLogger.Println("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
+	m.fLogger.Info("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
 	return s
 }

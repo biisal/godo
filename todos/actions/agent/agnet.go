@@ -6,12 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/biisal/todo-cli/config"
+	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/mitchellh/mapstructure"
@@ -206,7 +206,7 @@ You are a reliable companion for productivity, problem solving, and general assi
 	return isRefresh, nil
 }
 
-func AgentResponse(prompt string, logger *log.Logger) ([]agent.Content, bool, error) {
+func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool, error) {
 	var refresh = false
 	History = append(History, agent.Content{
 		Role: agent.UserRole,
@@ -223,7 +223,7 @@ func AgentResponse(prompt string, logger *log.Logger) ([]agent.Content, bool, er
 		return nil, refresh, err
 	}
 
-	logger.Println("REFRESH IS", refresh)
+	logger.Info("REFRESH IS", refresh)
 	return History, refresh, nil
 }
 

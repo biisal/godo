@@ -2,32 +2,23 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/biisal/todo-cli/config"
+	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func initLogging() (*os.File, error) {
-	f, err := os.OpenFile("debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		return nil, fmt.Errorf("failed to set up logging: %w", err)
-	}
-	return f, nil
-}
 func main() {
-	logfile, _ := initLogging()
-	defer logfile.Close()
-	defer fmt.Println("config are set up")
+	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", "info")
+	defer Flogger.Close()
 	if err := config.MustLoad(); err != nil {
 		fmt.Printf("Failed To Load Config %v: ", err)
 		os.Exit(1)
 	}
 	defer config.Cfg.DB.Close()
-	fLOgger := log.New(logfile, "[GODO-AGENT]", log.Ldate|log.Ltime|log.Lshortfile)
-	m := ui.InitialModel(fLOgger)
+	m := ui.InitialModel(Flogger)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	go func() {
