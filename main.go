@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", "info")
+	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Debug)
 	defer Flogger.Close()
 	if err := config.MustLoad(); err != nil {
 		fmt.Printf("Failed To Load Config %v: ", err)
