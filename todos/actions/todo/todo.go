@@ -129,15 +129,18 @@ func GetTodosInfo() (int, int, int, error) {
 }
 
 func GetTodoById(id int) (*todo.Todo, error) {
-	todos, err := GetTodos()
-	if err != nil {
+
+	sqlStmt := `
+	SELECT Id , Title, Description, Done
+	FROM todos
+	WHERE Id = ?
+	`
+	row := config.Cfg.DB.QueryRow(sqlStmt, id)
+	todo := &todo.Todo{}
+	if err := row.Scan(&todo.ID, &todo.TitleText, &todo.DescriptionText, &todo.Done); err != nil {
 		return nil, err
 	}
-	if id < 0 || id >= len(todos) {
-		return nil, ErrorInvalidId
-	}
-	return &todos[id], nil
-
+	return todo, nil
 }
 
 type QueryResult struct {

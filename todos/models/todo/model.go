@@ -108,7 +108,10 @@ func (d CustomDelegate) Render(w io.Writer, m list.Model, index int, listItem li
 	rowStyle := d.Theme.ListTheme.RowStyle().Margin(0, 0).Padding(0, 2).BorderLeft(false)
 
 	if item.Done && index != m.Index() {
-		rowStyle = rowStyle.BorderForeground(d.Theme.GetGreenColor()).Foreground(d.Theme.GetGreenColor())
+		rowStyle = rowStyle.Foreground(d.Theme.GetDarkGreenColor())
+	} else if item.Done && index == m.Index() {
+		rowStyle = rowStyle.BorderForeground(d.Theme.GetGreenColor()).Padding(0, 1).BorderLeft(true).Foreground(d.Theme.GetGreenColor())
+
 	} else if index == m.Index() {
 		rowStyle = rowStyle.BorderLeft(true).
 			Padding(0, 1).

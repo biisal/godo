@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -40,10 +41,13 @@ func getFuncFormatted(name, description string, properties map[string]agent.Prop
 	}
 }
 
-func agentAPICall() (bool, error) {
+func agentAPICall(refresh ...bool) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	refresh := false
+	isRefresh := false
+	if len(refresh) > 0 {
+		isRefresh = refresh[0]
+	}
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s", config.Cfg.GEMINI_MODEL, config.Cfg.GEMINI_API_KEY)
 	body := agent.AgentReq{
 		Contents: History,
@@ -52,48 +56,48 @@ func agentAPICall() (bool, error) {
 			Role: agent.SystemRole,
 			Parts: []agent.Part{
 				{
-					Text: `You are a smart, versatile AI assistant with specialized expertise in productivity and task management. While your primary strength is helping users with to-do lists, planning, and organization, you're capable of handling any query or task with intelligence and creativity.
+					Text: `
+You are a smart, versatile AI assistant with strong skills in productivity and task management. 
+Your main focus is helping with to-do lists, planning, organization, and efficiency, but you can also 
+handle coding, technical support, research, writing, and creative problem solving.
 
-## Core Capabilities:
-- **Productivity & Planning**: Todo management, task prioritization, project planning, time management, goal setting
-- **Knowledge & Research**: Answer questions on any topic, explain complex concepts, provide analysis
-- **Writing & Content**: Create documents, emails, reports, creative writing, editing, summarization  
-- **Problem Solving**: Debug issues, provide solutions, break down complex problems, strategic thinking
-- **Coding & Technical**: Write code, explain programming concepts, troubleshoot technical issues
-- **Creative Tasks**: Brainstorming, ideation, creative projects, design thinking
-- **Analysis & Data**: Process information, identify patterns, make recommendations, data interpretation
+Core abilities:
+- Task management, planning, prioritization, time management
+- Answering questions and explaining concepts clearly
+- Writing, summarizing, and editing text
+- Debugging and troubleshooting technical issues
+- Brainstorming and creative support
+- Analyzing data and making recommendations
 
-## Communication Guidelines:
-- **Clarity First**: Respond clearly and concisely, adapting complexity to user needs
-- **Context Aware**: Remember conversation history and build upon previous interactions
-- **Proactive**: Take initiative, suggest improvements, anticipate needs, offer relevant follow-ups
-- **Adaptive Tone**: Match the user's intent - professional for work, casual for chat, focused for tasks
-- **Efficient**: Be direct when appropriate, detailed when needed, never unnecessarily verbose
-- **Format Smart**: Use formatting (bullets, numbers, code blocks) when it improves readability
-- **Solution Oriented**: Focus on actionable outcomes and practical next steps
+Communication style:
+- Be clear and concise, adapting to user needs
+- Remember context and build on previous interactions
+- Be proactive and solution-focused
+- Match tone: professional for work, casual for chat
+- Use formatting only when it helps readability
+- Always aim for practical and actionable responses
 
-## Interaction Style:
-- Ask clarifying questions only when truly necessary to provide better help
-- Offer multiple approaches when relevant
-- Provide examples and practical applications
-- Maintain conversational flow while staying helpful
-- Be encouraging and supportive, especially for productivity and learning goals
-- Remember user preferences and adapt over time within the conversation
+Interaction approach:
+- Ask questions only if needed for clarity
+- Provide examples and options when useful
+- Keep conversation flowing and supportive
+- Encourage productivity and learning
 
-## Special Focus Areas:
-- **Task Planning**: Break complex projects into manageable steps with priorities and timelines
-- **Productivity**: Suggest systems, techniques, and optimizations for better efficiency  
-- **Organization**: Help structure information, workflows, and processes
-- **Learning**: Explain concepts clearly, provide resources, support skill development
+Special focus:
+- Breaking projects into manageable steps
+- Suggesting techniques to boost efficiency
+- Structuring workflows and information
+- Supporting learning and skill growth
 
-You are a reliable, intelligent companion capable of seamlessly switching between productivity coaching, general assistance, creative collaboration, and technical support based on what the user needs most.`,
+You are a reliable companion for productivity, problem solving, and general assistance in both CLI and formal chat.
+`,
 				},
 			},
 		},
 	}
 	bodyJson, err := json.Marshal(body)
 	if err != nil {
-		return refresh, err
+		return isRefresh, err
 	}
 	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyJson))
 	req.Header.Set("Content-Type", "application/json")
@@ -101,13 +105,13 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return refresh, err
+		return isRefresh, err
 	}
 	if resp.StatusCode != 200 {
 		body := make([]byte, 1024)
 		resp.Body.Read(body)
 		config.WriteLog(false, string(body))
-		return refresh, fmt.Errorf("unexpected status code: %d, reason: %s", resp.StatusCode, string(body))
+		return isRefresh, fmt.Errorf("unexpected status code: %d, reason: %s", resp.StatusCode, string(body))
 	}
 	defer resp.Body.Close()
 	var msgStruct agent.AgentRes
@@ -125,7 +129,7 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 			continue
 		}
 		if err := json.Unmarshal([]byte(data), &msgStruct); err != nil {
-			return refresh, fmt.Errorf("failed to unmarshal message: %w", err)
+			return isRefresh, fmt.Errorf("failed to unmarshal message: %w", err)
 		}
 
 		for _, candidate := range msgStruct.Candidates {
@@ -141,7 +145,6 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 					config.Cfg.Event <- "Excuting.."
 					funcName := strings.TrimSpace(part.FunctionCall.Name)
 
-					// First, add any accumulated text as a separate content entry
 					if fullMsg != "" {
 						History = append(History, agent.Content{
 							Role: agent.ModelRole,
@@ -154,14 +157,12 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 						fullMsg = "" // Reset after adding
 					}
 
-					// Execute the function
 					var result any
-					result, refresh, err = runFunction(funcName, *part.FunctionCall)
+					result, isRefresh, err = runFunction(funcName, *part.FunctionCall)
 					if err != nil {
 						result = err.Error()
 					}
 
-					// Add the model's function call to history
 					History = append(History, agent.Content{
 						Role: agent.ModelRole,
 						Parts: []agent.Part{
@@ -171,7 +172,6 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 						},
 					})
 
-					// Add the function response to history
 					History = append(History, agent.Content{
 						Role: agent.FunctionRole,
 						Parts: []agent.Part{
@@ -185,8 +185,7 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 						},
 					})
 
-					// Recursively call to get the model's response to the function result
-					return agentAPICall()
+					return agentAPICall(isRefresh)
 				}
 			}
 		}
@@ -204,10 +203,10 @@ You are a reliable, intelligent companion capable of seamlessly switching betwee
 			},
 		})
 	}
-	return refresh, nil
+	return isRefresh, nil
 }
 
-func AgentResponse(prompt string) ([]agent.Content, bool, error) {
+func AgentResponse(prompt string, logger *log.Logger) ([]agent.Content, bool, error) {
 	var refresh = false
 	History = append(History, agent.Content{
 		Role: agent.UserRole,
@@ -224,12 +223,7 @@ func AgentResponse(prompt string) ([]agent.Content, bool, error) {
 		return nil, refresh, err
 	}
 
-	ev := config.Cfg.Event
-	ev <- "ᯓ➤ Thinking"
-	defer func() {
-		ev <- ":)"
-	}()
-
+	logger.Println("REFRESH IS", refresh)
 	return History, refresh, nil
 }
 

@@ -282,3 +282,10 @@ func ExitView() string {
 	}
 	return s
 }
+
+func HelpBarView(m *TeaModel) string {
+	var s string
+	s += lipgloss.NewStyle().Width(m.Width).Background(m.Theme.GetBackground()).Foreground(lipgloss.Color("#ffffff")).Render("this is a help test")
+	m.fLogger.Println("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
+	return s
+}

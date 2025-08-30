@@ -181,7 +181,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
 			return m, tea.Cmd(func() tea.Msg {
-				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value())
+				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value(), m.fLogger)
 				if refresh {
 					m.RefreshList()
 				}
@@ -206,7 +206,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
 	// v, h := m.BgStyle.GetFrameSize()
 
 	m.Width = msg.Width
-	m.Height = msg.Height
+	m.Height = msg.Height - 2
 
 	// m.fLogger.Printf("Background frame size - Width: %d, Height: %d", v, h)
 	m.fLogger.Printf("Usable area - Width: %d, Height: %d", m.Width, m.Height)

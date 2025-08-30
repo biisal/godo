@@ -145,6 +145,7 @@ func (m *TeaModel) View() string {
 	// 	s += overly
 	// }
 	// s += m.BgStyle.Render(s)
+	s += HelpBarView(m)
 	return s
 }
 

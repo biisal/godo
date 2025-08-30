@@ -120,6 +120,9 @@ func (t Theme) GetGrayColor() lipgloss.Color {
 func (t *Theme) GetGreenColor() lipgloss.Color {
 	return lipgloss.Color("#00FF70")
 }
+func (t *Theme) GetDarkGreenColor() lipgloss.Color {
+	return lipgloss.Color("#5AC88A")
+}
 func (t Theme) ListCustomDelegate(width int) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 	bg := t.GetBackground()
