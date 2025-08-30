@@ -38,22 +38,6 @@ type TeaModel struct {
 	fLogger       *logger.Logger
 }
 
-func getTitleInput(prompt, placeholder string) textinput.Model {
-	input := textinput.New()
-	input.Placeholder = placeholder
-	input.Prompt = prompt
-	input.Focus()
-	return input
-}
-
-func getDescInput(placeholder string) textarea.Model {
-	input := textarea.New()
-	input.Placeholder = placeholder
-	input.FocusedStyle.Base = styles.DescStyle
-	input.FocusedStyle.CursorLine = lipgloss.NewStyle()
-	return input
-}
-
 type eventMsg string
 
 func waitForActivity(ev chan string) tea.Cmd {
@@ -61,7 +45,17 @@ func waitForActivity(ev chan string) tea.Cmd {
 		return eventMsg(<-ev)
 	}
 }
-
+func getTitleInput(s ...string) textinput.Model {
+	input := textinput.New()
+	if len(s) > 0 {
+		input.Prompt = s[0]
+	}
+	if len(s) > 1 {
+		input.Placeholder = s[1]
+	}
+	input.Focus()
+	return input
+}
 func InitialModel(fLogger *logger.Logger) *TeaModel {
 	idInput := textinput.New()
 	idInput.Prompt = "ID > "
@@ -74,14 +68,14 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
 			AddModel: todo.TodoForm{
-				TitleInput: getTitleInput("Title > ", "Enter title"),
-				DescInput:  getDescInput("Enter description"),
+				TitleInput: getTitleInput("Title > ", "Enter todo title"),
+				DescInput:  textarea.New(),
 				InputCount: 2,
 			},
 			EditModel: todo.TodoForm{
 				IdInput:    idInput,
-				TitleInput: getTitleInput("Title > ", "Edit title"),
-				DescInput:  getDescInput("Edit description"),
+				TitleInput: getTitleInput("Title > ", "Enter todo title"),
+				DescInput:  textarea.New(),
 				InputCount: 3,
 			},
 			SelectedIndex: 0,
@@ -122,14 +116,16 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TeaModel) View() string {
 	var s string
+	hs, helpBarHeight := HelpBarView(m)
+	maxHeight := m.Height - helpBarHeight
+
 	switch m.Choices[m.SelectedIndex].Value {
 	case TodoMode.Value:
-		s = TodoView(m)
+		s = TodoView(m, maxHeight)
 	case AgentMode.Value:
-		s = AgentView(m)
+		s = AgentView(m, maxHeight)
 	}
-
-	s += HelpBarView(m)
+	s = lipgloss.JoinVertical(lipgloss.Center, s, hs)
 	return s
 }
 

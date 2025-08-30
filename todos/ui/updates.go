@@ -26,14 +26,17 @@ func SetUpDefalutKeys(key string, m *TeaModel) {
 		} else {
 			m.SelectedIndex = 0
 		}
-	case "ctrl+right":
-		if len(m.TodoModel.Choices) > m.TodoModel.SelectedIndex+1 {
-			m.TodoModel.SelectedIndex++
+	case "ctrl+left", "ctrl+b":
+		maxChoice := len(m.TodoModel.Choices)
+		if m.TodoModel.SelectedIndex == 0 && maxChoice > 0 {
+			m.TodoModel.SelectedIndex = maxChoice - 1
+			return
 		}
-	case "ctrl+left":
-		if m.TodoModel.SelectedIndex > 0 {
-			m.TodoModel.SelectedIndex--
-		}
+		m.TodoModel.SelectedIndex--
+	case "ctrl+right", "ctrl+n":
+		maxChoice := len(m.TodoModel.Choices)
+		currentIndex := m.TodoModel.SelectedIndex
+		m.TodoModel.SelectedIndex = (currentIndex + 1) % maxChoice
 	}
 }
 
@@ -151,7 +154,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	var cmds []tea.Cmd
 	defer SetUpDefalutKeys(key, m)
-	if key == "esc" || key == "ctrl+c" {
+	if key == "ctrl+c" {
 		m.IsExiting = true
 		return m, tea.Quit
 	}
@@ -195,22 +198,9 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 }
 
 func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
-	m.fLogger.FInfo("=== UpdateOnSize: Window resized to %dx%d ===", msg.Width, msg.Height)
 	m.Width = msg.Width
-	m.Height = msg.Height - 2
-
-	m.fLogger.FInfo("Usable area - Width: %d, Height: %d", m.Width, m.Height)
-
-	// Set chat viewport to 80% of available height
-	chatViewportHeight := m.Height * 80 / 100
-	m.AgentModel.ChatViewport.Width = m.Width
-	m.AgentModel.ChatViewport.Height = chatViewportHeight
-
-	m.fLogger.FInfo("Chat viewport set to - Width: %d, Height: %d (80%% of %d)",
-		m.AgentModel.ChatViewport.Width, m.AgentModel.ChatViewport.Height, m.Height)
-
+	m.Height = msg.Height
 	m.RefreshList()
-	m.fLogger.Info("=== UpdateOnSize: Complete ===")
 }
 
 func (m *TeaModel) UpdateDescriptionContent() {

@@ -139,7 +139,6 @@ func (t Theme) ListCustomDelegate(width int) list.DefaultDelegate {
 func (lt *ListTheme) RowStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#AEAEAE")).
-		// Background(lipgloss.Color("#130F1A")).
 		Border(lipgloss.RoundedBorder()).
 		BorderLeft(true).
 		BorderRight(false).
@@ -157,4 +156,17 @@ func (lt *ListTheme) SelectedColor() lipgloss.Color {
 func (t *Theme) TitleBackround() lipgloss.Color {
 	return lipgloss.Color("#f8baff")
 
+}
+func (t *Theme) ModeStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Background(t.GetGrayColor()).
+		Foreground(lipgloss.Color("#000000")).
+		Padding(0, 1)
+}
+
+func (t *Theme) GetTitleInputStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("#29273b")).Foreground(lipgloss.Color("#bebcc4"))
+}
+func (t *Theme) GetDescriptionInputStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("#29273b")).Foreground(lipgloss.Color("#bebcc4"))
 }
