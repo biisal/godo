@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
@@ -39,11 +40,11 @@ type TeaModel struct {
 
 type eventMsg string
 
-//	func waitForActivity(ev chan string) tea.Cmd {
-//		return func() tea.Msg {
-//			return eventMsg(<-ev)
-//		}
-//	}
+func waitForActivity(ev chan string) tea.Cmd {
+	return func() tea.Msg {
+		return eventMsg(<-ev)
+	}
+}
 func getDescInput(placeholder string) textarea.Model {
 	input := textarea.New()
 	input.Placeholder = placeholder
@@ -109,6 +110,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case eventMsg:
 		m.EventMsg = string(msg)
+		return m, waitForActivity(config.Cfg.Event)
 	case tea.KeyMsg:
 		_, cmd := UpdateOnKey(msg, m)
 		if cmd != nil {
@@ -142,7 +144,6 @@ func (m *TeaModel) View() string {
 
 func (m *TeaModel) Init() tea.Cmd {
 	return tea.Batch(
-		// waitForActivity(config.Cfg.Event),
-		textinput.Blink,
+		waitForActivity(config.Cfg.Event), textinput.Blink,
 	)
 }

@@ -3,7 +3,6 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"strings"
@@ -18,7 +17,6 @@ type Config struct {
 	GEMINI_MODEL   string `env:"GEMINI_MODEL"`
 	GEMINI_API_KEY string `env:"GEMINI_API_KEY"`
 	ENVIRONMENT    string `env:"ENVIRONMENT"`
-	Event          chan string
 	DB_PATH        string
 	DB_NAME        string
 	DB             *sql.DB
@@ -35,32 +33,6 @@ var (
 	LogDIR         string
 	TodoFilePath   string
 )
-
-func checkErr(err error) bool {
-	if err != nil {
-		fmt.Println("Log error:", err)
-		return true // error occurred
-	}
-	return false // no error
-}
-func WriteLog(DEBUG bool, msg ...any) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			fmt.Print("Error detected logging:", r)
-		}
-	}()
-	if DEBUG {
-		fmt.Println(msg...)
-	} else {
-		logfile, err := os.OpenFile(LogDIR+"/"+AppName+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if !checkErr(err) {
-			log.SetOutput(logfile)
-			log.Println(msg...)
-		}
-		defer logfile.Close()
-	}
-}
 
 func loadEnv(paths []string) error {
 	for _, path := range paths {
@@ -108,8 +80,6 @@ func MustLoad() error {
 		LogDIR = HomeDIR + "/local/share/godo"
 		TodoFilePath = HomeDIR + "/local/share/godo/agentTodos.json"
 	}
-	Cfg.Event = make(chan string, 100)
-	Cfg.Event <- ":)"
 	if Cfg.DB_PATH == "" {
 		if Cfg.DB_NAME == "" {
 			Cfg.DB_NAME = "todo.db"

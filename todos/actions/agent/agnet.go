@@ -110,7 +110,6 @@ You are a reliable companion for productivity, problem solving, and general assi
 	if resp.StatusCode != 200 {
 		body := make([]byte, 1024)
 		resp.Body.Read(body)
-		config.WriteLog(false, string(body))
 		return isRefresh, fmt.Errorf("unexpected status code: %d, reason: %s", resp.StatusCode, string(body))
 	}
 	defer resp.Body.Close()
@@ -142,7 +141,6 @@ You are a reliable companion for productivity, problem solving, and general assi
 				// Handle function calls
 				if part.FunctionCall != nil {
 					hasFunctionCall = true
-					config.Cfg.Event <- "Excuting.."
 					funcName := strings.TrimSpace(part.FunctionCall.Name)
 
 					if fullMsg != "" {

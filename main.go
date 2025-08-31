@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Debug)
+	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Error)
 	defer Flogger.Close()
 	if err := config.MustLoad(); err != nil {
 		fmt.Printf("Failed To Load Config %v: ", err)
@@ -23,7 +23,6 @@ func main() {
 
 	go func() {
 		for msg := range config.Ping {
-			config.WriteLog(false, msg)
 			p.Send(msg)
 			m.AgentModel.ChatViewport.GotoBottom()
 		}
@@ -31,7 +30,7 @@ func main() {
 
 	tea.ClearScreen()
 	if _, err := p.Run(); err != nil {
-		config.WriteLog(false, err)
+		m.FLogger.Error("Error running program:", err)
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}

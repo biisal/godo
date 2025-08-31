@@ -3,13 +3,11 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"time"
-
 	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -53,7 +51,7 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		case 1:
 			_, err := todoAction.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
 			if err != nil {
-				m.ShowError(err, cmds)
+				m.ShowError(err)
 				return
 			}
 			m.RefreshList()
@@ -63,12 +61,12 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		case 2:
 			id, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
 			if err != nil {
-				m.ShowError(WrongTypeIdError, cmds)
+				m.ShowError(WrongTypeIdError)
 				return
 			}
 			_, err = todoAction.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
 			if err != nil {
-				m.ShowError(err, cmds)
+				m.ShowError(err)
 				return
 			}
 			m.RefreshList()
@@ -113,7 +111,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 			todoAction.ToggleDone(id)
 			item, err := todoAction.GetTodoById(id)
 			if err != nil {
-				m.fLogger.Info("ERROR GETTING ITEM WITH id ", id, " : ", err)
+				m.FLogger.Info("ERROR GETTING ITEM WITH id ", id, " : ", err)
 				return m, nil
 			}
 			m.TodoModel.ListModel.List.SetItem(m.TodoModel.ListModel.List.Index(), *item)
@@ -132,7 +130,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 		if selected != nil {
 			_, err := todoAction.DeleteTodo(selected.(todo.Todo).ID)
 			if err != nil {
-				m.ShowError(err, nil)
+				m.ShowError(err)
 				return m, nil
 			}
 			m.RefreshList()
@@ -174,12 +172,12 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
 			return m, tea.Cmd(func() tea.Msg {
-				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value(), m.fLogger)
+				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value(), m.FLogger)
 				if refresh {
 					m.RefreshList()
 				}
 				if err != nil {
-					m.ShowError(err, &cmds)
+					m.ShowError(err)
 				}
 				m.AgentModel.PromptInput.Reset()
 				return m
@@ -202,9 +200,9 @@ func (m *TeaModel) UpdateDescriptionContent() {
 	var LabelStyle = lipgloss.NewStyle().Background(m.Theme.TitleBackround()).Padding(0, 1).Foreground(lipgloss.Color("#000000")).Bold(true)
 	var rightContent string
 	if selectedItem := m.TodoModel.ListModel.List.SelectedItem(); selectedItem != nil {
-		m.fLogger.Info("SELECTED ITEM", selectedItem)
+		m.FLogger.Info("SELECTED ITEM", selectedItem)
 		if i, ok := selectedItem.(todo.Todo); ok {
-			m.fLogger.Info("MATCHED", i)
+			m.FLogger.Info("MATCHED", i)
 			statusText := "Not Compelted"
 			if i.Done {
 				statusText = "Compelted"
@@ -212,7 +210,7 @@ func (m *TeaModel) UpdateDescriptionContent() {
 			rightContent = fmt.Sprintf("%s : %s\n\n%s : %s ", LabelStyle.Render("Status"), statusText, LabelStyle.Render("Description"), i.Description())
 		}
 	}
-	m.fLogger.Info("RIGHT CONTENT IS : ", rightContent)
+	m.FLogger.Info("RIGHT CONTENT IS : ", rightContent)
 	m.TodoModel.ListModel.DescViewport.Height = m.Height * 50 / 100
 	m.TodoModel.ListModel.DescViewport.SetContent(rightContent)
 }
@@ -229,7 +227,7 @@ func (m *TeaModel) RefreshList() {
 	}
 	innerWidth := m.Width * 60 / 100
 	innerHeight := m.Height * 80 / 100
-	m.fLogger.Info("THE WIDTH IS :", innerWidth)
+	m.FLogger.Info("THE WIDTH IS :", innerWidth)
 	m.TodoModel.ListModel.List = list.New(items, todo.CustomDelegate{Width: innerWidth - 2, Theme: styles.Theme{}}, 0, 0)
 	m.TodoModel.ListModel.List.SetSize(innerWidth, innerHeight)
 	m.TodoModel.ListModel.List.Title = "Todos "
@@ -237,12 +235,7 @@ func (m *TeaModel) RefreshList() {
 
 type clearErrorMsg struct{}
 
-func (m *TeaModel) ShowError(err error, cmds *[]tea.Cmd) {
-	m.Error = err
-	*cmds = append(*cmds, func() tea.Msg {
-		time.Sleep(4 * time.Second)
-		return clearErrorMsg{}
-	})
+func (m *TeaModel) ShowError(err error) {
 }
 
 func (m *TeaModel) Exit(cmds *[]tea.Cmd) {

@@ -107,7 +107,7 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
 	if historyLen == 0 {
-		m.fLogger.Info("No history - showing welcome screen")
+		m.FLogger.Info("No history - showing welcome screen")
 		logo := styles.Logo + styles.ChatInstructions
 		chatContent = styles.PurpleStyle.
 			AlignHorizontal(lipgloss.Center).
@@ -116,11 +116,11 @@ func AgentView(m *TeaModel, maxHeight int) string {
 			Width(m.AgentModel.ChatViewport.Width).
 			Render(logo)
 	} else {
-		m.fLogger.Info("Processing chat history...")
+		m.FLogger.Info("Processing chat history...")
 		processedMsgs := 0
 		for i, msg := range agentaction.History {
 			if msg.IsToolReq {
-				m.fLogger.FInfo("Skipping tool request message at index %d", i)
+				m.FLogger.FInfo("Skipping tool request message at index %d", i)
 				continue
 			}
 
@@ -130,20 +130,20 @@ func AgentView(m *TeaModel, maxHeight int) string {
 			}
 
 			if content == "" {
-				m.fLogger.FInfo("Skipping empty message at index %d", i)
+				m.FLogger.FInfo("Skipping empty message at index %d", i)
 				continue
 			}
 
 			if msg.Role == agent.UserRole {
-				m.fLogger.FInfo("Rendering user message %d", i)
+				m.FLogger.FInfo("Rendering user message %d", i)
 				chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
 			} else {
-				m.fLogger.FInfo("Rendering agent message %d", i)
+				m.FLogger.FInfo("Rendering agent message %d", i)
 				chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
 			}
 			processedMsgs++
 		}
-		m.fLogger.FInfo("Processed %d messages", processedMsgs)
+		m.FLogger.FInfo("Processed %d messages", processedMsgs)
 	}
 	m.AgentModel.ChatViewport.SetContent(chatContent)
 
@@ -193,11 +193,11 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	result := lipgloss.JoinVertical(lipgloss.Top, topPart, middle, bottomPart)
 
 	totalHeight := lipgloss.Height(result)
-	m.fLogger.FDebug("Final height - Expected: %d, Actual: %d", maxHeight, totalHeight)
-	m.fLogger.FDebug("Input Height %d | Input View Height %d", inputHeight, lipgloss.Height(inputView))
+	m.FLogger.FDebug("Final height - Expected: %d, Actual: %d", maxHeight, totalHeight)
+	m.FLogger.FDebug("Input Height %d | Input View Height %d", inputHeight, lipgloss.Height(inputView))
 	if totalHeight > maxHeight {
 		overflow := totalHeight - maxHeight
-		m.fLogger.FWarn("WARNING: Content exceeds screen height by %d pixels", overflow)
+		m.FLogger.FWarn("WARNING: Content exceeds screen height by %d pixels", overflow)
 	}
 	return result
 }
@@ -240,7 +240,7 @@ func HelpBarView(m *TeaModel) (string, int) {
 		for i, choice := range m.TodoModel.Choices {
 			defalutStyles := m.Theme.ModeStyle()
 			if i == totalChoices-1 {
-				m.fLogger.Debug("Adding margin right")
+				m.FLogger.Debug("Adding margin right")
 				defalutStyles = defalutStyles.MarginRight(1)
 			}
 			if choice.Value == m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
@@ -263,6 +263,6 @@ func HelpBarView(m *TeaModel) (string, int) {
 	leftPart := m.Theme.GetInstructionStyle().Width(m.Width - rightWidth).Render("Quit: Esc / Ctrl+C")
 
 	s = lipgloss.JoinHorizontal(lipgloss.Top, leftPart, rightPart)
-	m.fLogger.Debug("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
+	m.FLogger.Debug("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
 	return s, lipgloss.Height(s)
 }

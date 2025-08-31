@@ -148,3 +148,10 @@ func (t *Theme) GetTitleInputStyle() lipgloss.Style {
 func (t *Theme) GetDescriptionInputStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("#29273b")).Foreground(lipgloss.Color("#bebcc4"))
 }
+
+func (t *Theme) GetEorrorStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Padding(0, 1).
+		Foreground(lipgloss.Color("#FF0000")).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#FF0000"))
+}
