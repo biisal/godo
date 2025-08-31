@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -29,6 +31,40 @@ var (
 	History          = make([]agent.Content, 0)
 )
 
+func GetChatHistoryFromDB() (*[]agent.Content, error) {
+	sqlStmt := "SELECT chat FROM chats"
+	rows, err := config.Cfg.DB.Query(sqlStmt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+	var history []agent.Content
+	for rows.Next() {
+		var chatContent []byte
+		if err := rows.Scan(&chatContent); err != nil {
+			fmt.Println(err)
+		}
+		chat := agent.Content{}
+		if err := json.Unmarshal(chatContent, &chat); err != nil {
+			fmt.Println(err)
+		}
+		history = append(history, chat)
+	}
+	return &history, nil
+
+}
+func AddChatToDB(content agent.Content) error {
+	sqlStmt := "INSERT INTO chats (chat) VALUES (?)"
+	contentJson, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	_, err = config.Cfg.DB.Exec(sqlStmt, string(contentJson))
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func getFuncFormatted(name, description string, properties map[string]agent.Property, required []string) agent.FunctionDeclaration {
 	return agent.FunctionDeclaration{
 		Name:        name,
@@ -41,6 +77,51 @@ func getFuncFormatted(name, description string, properties map[string]agent.Prop
 	}
 }
 
+func renderMarkdown(md string) string {
+	cmd := exec.Command("glow", "-") // "-" tells glow to read from stdin
+	cmd.Stdin = bytes.NewBufferString(md)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return md // fallback: return raw Markdown if glow fails
+	}
+	return out.String()
+}
+
+// AI generated helper function
+func stripMarkdown(md string) string {
+	// 1. Remove links: [text](url) → keep "text"
+	re := regexp.MustCompile(`\[(.*?)\]\(.*?\)`)
+	text := re.ReplaceAllString(md, "$1")
+
+	// 2. Remove images: ![alt](url) → keep "alt"
+	re = regexp.MustCompile(`!\[(.*?)\]\(.*?\)`)
+	text = re.ReplaceAllString(text, "$1")
+
+	// 3. Remove bold/italic (**bold**, *italic*, ***both***)
+	re = regexp.MustCompile(`\*{1,3}([^\*]+)\*{1,3}`)
+	text = re.ReplaceAllString(text, "$1")
+
+	// 4. Remove inline code `code`
+	re = regexp.MustCompile("`([^`]+)`")
+	text = re.ReplaceAllString(text, "$1")
+
+	// 5. Remove headings (### Title → Title)
+	re = regexp.MustCompile(`(?m)^#{1,6}\s*`)
+	text = re.ReplaceAllString(text, "")
+
+	// 6. Remove list markers (-, *, 1.)
+	re = regexp.MustCompile(`(?m)^\s*[-*+]\s+`)
+	text = re.ReplaceAllString(text, "")
+	re = regexp.MustCompile(`(?m)^\s*\d+\.\s+`)
+	text = re.ReplaceAllString(text, "")
+
+	return text
+}
+
 func agentAPICall(refresh ...bool) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -48,6 +129,7 @@ func agentAPICall(refresh ...bool) (bool, error) {
 	if len(refresh) > 0 {
 		isRefresh = refresh[0]
 	}
+	currentDateTime := time.Now().Format("2006-01-02 15:04:05")
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s", config.Cfg.GEMINI_MODEL, config.Cfg.GEMINI_API_KEY)
 	body := agent.AgentReq{
 		Contents: History,
@@ -57,40 +139,23 @@ func agentAPICall(refresh ...bool) (bool, error) {
 			Parts: []agent.Part{
 				{
 					Text: `
-You are a smart, versatile AI assistant with strong skills in productivity and task management. 
-Your main focus is helping with to-do lists, planning, organization, and efficiency, but you can also 
-handle coding, technical support, research, writing, and creative problem solving.
+You are the AI assistant inside the GoDo CLI app.  
+You help with productivity, task management, coding, troubleshooting, writing, and learning.
 
-Core abilities:
-- Task management, planning, prioritization, time management
-- Answering questions and explaining concepts clearly
-- Writing, summarizing, and editing text
-- Debugging and troubleshooting technical issues
-- Brainstorming and creative support
-- Analyzing data and making recommendations
+Abilities:
+- Manage and organize tasks
+- Break down projects into steps
+- Explain concepts and answer questions
+- Debug and solve technical problems
+- Summarize, write, and edit text
+- Suggest ways to boost efficiency
 
-Communication style:
-- Be clear and concise, adapting to user needs
-- Remember context and build on previous interactions
-- Be proactive and solution-focused
+Style:
+- Be clear, concise, and practical
+- Keep context across inputs
 - Match tone: professional for work, casual for chat
-- Use formatting only when it helps readability
-- Always aim for practical and actionable responses
 
-Interaction approach:
-- Ask questions only if needed for clarity
-- Provide examples and options when useful
-- Keep conversation flowing and supportive
-- Encourage productivity and learning
-
-Special focus:
-- Breaking projects into manageable steps
-- Suggesting techniques to boost efficiency
-- Structuring workflows and information
-- Supporting learning and skill growth
-
-You are a reliable companion for productivity, problem solving, and general assistance in both CLI and formal chat.
-`,
+You always have access to the current time: ` + currentDateTime,
 				},
 			},
 		},
@@ -196,24 +261,28 @@ You are a reliable companion for productivity, problem solving, and general assi
 			Role: agent.ModelRole,
 			Parts: []agent.Part{
 				{
-					Text: fullMsg,
+					Text: stripMarkdown(fullMsg),
 				},
 			},
 		})
 	}
+	AddChatToDB(History[len(History)-1])
 	return isRefresh, nil
 }
 
 func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool, error) {
 	var refresh = false
-	History = append(History, agent.Content{
+	var userInput = agent.Content{
 		Role: agent.UserRole,
 		Parts: []agent.Part{
 			{
 				Text: prompt,
 			},
 		},
-	})
+	}
+
+	History = append(History, userInput)
+	AddChatToDB(userInput)
 	config.Ping <- ""
 	var err error
 	refresh, err = agentAPICall()
@@ -222,7 +291,6 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 		return nil, refresh, err
 	}
 
-	logger.Info("REFRESH IS", refresh)
 	return History, refresh, nil
 }
 

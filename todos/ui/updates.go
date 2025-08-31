@@ -171,6 +171,9 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case "down":
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
+			if m.AgentModel.PromptInput.Value() == "" {
+				return m, nil
+			}
 			return m, tea.Cmd(func() tea.Msg {
 				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value(), m.FLogger)
 				if refresh {

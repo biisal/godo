@@ -98,12 +98,19 @@ func initDb() error {
 		return err
 	}
 	sqlStmt := `
+	BEGIN;
 	CREATE TABLE IF NOT EXISTS todos (
 		Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		Title TEXT NOT NULL,
 		Description TEXT NOT NULL,
 		Done BOOLEAN NOT NULL DEFAULT FALSE
-	)`
+	);
+	CREATE TABLE IF NOT EXISTS chats(
+		Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		chat TEXT
+	);
+	COMMIT;
+	`
 	if _, err = db.Exec(sqlStmt); err != nil {
 		return err
 	}
