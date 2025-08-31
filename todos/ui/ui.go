@@ -45,7 +45,12 @@ func waitForActivity(ev chan string) tea.Cmd {
 		return eventMsg(<-ev)
 	}
 }
-func getTitleInput(s ...string) textinput.Model {
+func getDescInput(placeholder string) textarea.Model {
+	input := textarea.New()
+	input.Placeholder = placeholder
+	return input
+}
+func getTitleInput(focus bool, s ...string) textinput.Model {
 	input := textinput.New()
 	if len(s) > 0 {
 		input.Prompt = s[0]
@@ -53,13 +58,12 @@ func getTitleInput(s ...string) textinput.Model {
 	if len(s) > 1 {
 		input.Placeholder = s[1]
 	}
-	input.Focus()
+	if focus {
+		input.Focus()
+	}
 	return input
 }
 func InitialModel(fLogger *logger.Logger) *TeaModel {
-	idInput := textinput.New()
-	idInput.Prompt = "ID > "
-
 	promptInput := textinput.New()
 	promptInput.Focus()
 	teaModel := TeaModel{
@@ -68,14 +72,14 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
 			AddModel: todo.TodoForm{
-				TitleInput: getTitleInput("Title > ", "Enter todo title"),
-				DescInput:  textarea.New(),
+				TitleInput: getTitleInput(true, "Title > ", "Enter todo title"),
+				DescInput:  getDescInput("Enter todo description"),
 				InputCount: 2,
 			},
 			EditModel: todo.TodoForm{
-				IdInput:    idInput,
-				TitleInput: getTitleInput("Title > ", "Enter todo title"),
-				DescInput:  textarea.New(),
+				IdInput:    getTitleInput(false, "Id > ", "Enter todo id"),
+				TitleInput: getTitleInput(true, "Title > ", "Enter todo title"),
+				DescInput:  getDescInput("Enter todo description"),
 				InputCount: 3,
 			},
 			SelectedIndex: 0,
@@ -93,8 +97,10 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
-	m.TodoModel.ListModel.List, cmd = m.TodoModel.ListModel.List.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.Choices[m.SelectedIndex].Value == TodoMode.Value && m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value == TodoListMode.Value {
+		m.TodoModel.ListModel.List, cmd = m.TodoModel.ListModel.List.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	switch msg := msg.(type) {
 	case clearErrorMsg:
 		m.Error = nil

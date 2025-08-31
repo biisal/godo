@@ -1,17 +1,10 @@
 package ui
 
 import (
-	"fmt"
-	"strconv"
-	"time"
-
-	"github.com/biisal/todo-cli/config"
 	agentaction "github.com/biisal/todo-cli/todos/actions/agent"
-	todoaction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/agent"
 
 	"github.com/biisal/todo-cli/todos/ui/styles"
-	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -50,10 +43,13 @@ func TodoView(m *TeaModel, maxHeight int) string {
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 		restHeight := maxHeight - topHight - inputHeight
-		descInput.SetHeight(restHeight)
-		descInput.SetWidth(m.Width)
 
-		s = lipgloss.JoinVertical(lipgloss.Center, topPart, inputView, descInput.View())
+		descView := lipgloss.NewStyle().Width(m.Width).Height(restHeight).PaddingBottom(1)
+		descX, descY := descView.GetFrameSize()
+		descInput.SetHeight(restHeight - descY)
+		descInput.SetWidth(m.Width - descX)
+
+		s = lipgloss.JoinVertical(lipgloss.Center, topPart, inputView, descView.Render(descInput.View()))
 	case TodoListMode.Value:
 		return RenderListView(m, maxHeight)
 	case TodoEditMode.Value:
@@ -83,7 +79,7 @@ func TodoView(m *TeaModel, maxHeight int) string {
 			Height(1).
 			BorderTop(true).
 			Border(lipgloss.NormalBorder()).
-			BorderBottom(true).
+			BorderBottom(false).
 			BorderRight(false).
 			BorderLeft(false).
 			BorderForeground(lipgloss.Color("#666666")).
@@ -102,6 +98,13 @@ func TodoView(m *TeaModel, maxHeight int) string {
 func AgentView(m *TeaModel, maxHeight int) string {
 	var chatContent string
 	historyLen := len(agentaction.History)
+
+	outerChatIViewHeight := maxHeight * 80 / 100
+	chatstyle := lipgloss.NewStyle()
+	cWidth, cHeight := chatstyle.GetFrameSize()
+
+	m.AgentModel.ChatViewport.Width = m.Width - cWidth
+	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
 	if historyLen == 0 {
 		m.fLogger.Info("No history - showing welcome screen")
@@ -142,14 +145,7 @@ func AgentView(m *TeaModel, maxHeight int) string {
 		}
 		m.fLogger.FInfo("Processed %d messages", processedMsgs)
 	}
-	outerChatIViewHeight := maxHeight * 80 / 100
 	m.AgentModel.ChatViewport.SetContent(chatContent)
-
-	chatstyle := lipgloss.NewStyle()
-	cWidth, cHeight := chatstyle.GetFrameSize()
-
-	m.AgentModel.ChatViewport.Width = m.Width - cWidth
-	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
 	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
 
@@ -203,38 +199,38 @@ func AgentView(m *TeaModel, maxHeight int) string {
 		overflow := totalHeight - maxHeight
 		m.fLogger.FWarn("WARNING: Content exceeds screen height by %d pixels", overflow)
 	}
-
 	return result
 }
-func ExitView() string {
-	timeSpent := time.Since(config.StartTime).Round(time.Second).String()
-	timeStr := fmt.Sprintf("%v", timeSpent)
-	totalTodos, completed, remains, err := todoaction.GetTodosInfo()
-	var s string
-	if err == nil {
-		columns := []table.Column{
-			{
-				Title: "SUMMURY",
-				Width: 20,
-			},
-			{
-				Title: "",
-				Width: 20,
-			},
-		}
-		rows := []table.Row{
-			{"Time Spent", timeStr},
-			{"Total Todos", strconv.Itoa(totalTodos)},
-			{"Completed", strconv.Itoa(completed)},
-			{"Remains", strconv.Itoa(remains)},
-		}
-		t := table.New(table.WithColumns(columns), table.WithRows(rows))
-		t.SetHeight(5)
 
-		s = styles.BoxStyle.Render(t.View()) + "\n\n"
-	}
-	return s
-}
+// func ExitView() string {
+// 	timeSpent := time.Since(config.StartTime).Round(time.Second).String()
+// 	timeStr := fmt.Sprintf("%v", timeSpent)
+// 	totalTodos, completed, remains, err := todoaction.GetTodosInfo()
+// 	var s string
+// 	if err == nil {
+// 		columns := []table.Column{
+// 			{
+// 				Title: "SUMMURY",
+// 				Width: 20,
+// 			},
+// 			{
+// 				Title: "",
+// 				Width: 20,
+// 			},
+// 		}
+// 		rows := []table.Row{
+// 			{"Time Spent", timeStr},
+// 			{"Total Todos", strconv.Itoa(totalTodos)},
+// 			{"Completed", strconv.Itoa(completed)},
+// 			{"Remains", strconv.Itoa(remains)},
+// 		}
+// 		t := table.New(table.WithColumns(columns), table.WithRows(rows))
+// 		t.SetHeight(5)
+//
+// 		s = styles.BoxStyle.Render(t.View()) + "\n\n"
+// 	}
+// 	return s
+// }
 
 func HelpBarView(m *TeaModel) (string, int) {
 	var s string

@@ -219,6 +219,7 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 	config.Ping <- ""
 	var err error
 	refresh, err = agentAPICall()
+	config.Ping <- ""
 	if err != nil {
 		return nil, refresh, err
 	}

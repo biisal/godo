@@ -26,14 +26,14 @@ func SetUpDefalutKeys(key string, m *TeaModel) {
 		} else {
 			m.SelectedIndex = 0
 		}
-	case "ctrl+left", "ctrl+b":
+	case "ctrl+left", "ctrl+h":
 		maxChoice := len(m.TodoModel.Choices)
 		if m.TodoModel.SelectedIndex == 0 && maxChoice > 0 {
 			m.TodoModel.SelectedIndex = maxChoice - 1
 			return
 		}
 		m.TodoModel.SelectedIndex--
-	case "ctrl+right", "ctrl+n":
+	case "ctrl+right", "ctrl+l":
 		maxChoice := len(m.TodoModel.Choices)
 		currentIndex := m.TodoModel.SelectedIndex
 		m.TodoModel.SelectedIndex = (currentIndex + 1) % maxChoice
@@ -137,11 +137,6 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 			}
 			m.RefreshList()
 		}
-	case "up", "down", "pgup", "pgdown", "home", "end":
-		listModel, cmd := m.TodoModel.ListModel.List.Update(msg)
-		m.TodoModel.ListModel.List = listModel
-		m.UpdateDescriptionContent()
-		return m, &cmd
 	case "j", "k":
 		vp, cmd := m.TodoModel.ListModel.DescViewport.Update(msg)
 		m.TodoModel.ListModel.DescViewport = vp
