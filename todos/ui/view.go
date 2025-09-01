@@ -9,18 +9,21 @@ import (
 )
 
 func RenderListView(m *TeaModel, maxHeight int) string {
-	left := lipgloss.NewStyle().Height(maxHeight).Width(m.Width * 60 / 100).Render(m.TodoModel.ListModel.List.View())
+	leftWidth := m.Width * 60 / 100
+	left := lipgloss.NewStyle().Height(maxHeight).Padding(1).Width(leftWidth).Render(m.TodoModel.ListModel.List.View())
+
 	m.UpdateDescriptionContent()
-	right := lipgloss.NewStyle().Width(m.Width-lipgloss.Width(left)).Border(lipgloss.RoundedBorder()).
+	right := lipgloss.NewStyle().Width(m.Width-leftWidth-1).Border(lipgloss.RoundedBorder()).
 		BorderForeground(m.Theme.GetBorderColor()).
 		Height(maxHeight).
 		BorderLeft(true).BorderBottom(false).
-		Padding(1, 0, 0, 1).
+		Padding(1, 1, 0, 1).
 		BorderRight(false).BorderTop(false).
 		Render(m.TodoModel.ListModel.DescViewport.View())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
+
 func TodoView(m *TeaModel, maxHeight int) string {
 	var s string
 	switch m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
@@ -39,7 +42,6 @@ func TodoView(m *TeaModel, maxHeight int) string {
 			BorderBottom(true).
 			BorderRight(false).
 			BorderLeft(false).
-			BorderForeground(lipgloss.Color("#666666")).
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 		restHeight := maxHeight - topHight - inputHeight
@@ -69,20 +71,16 @@ func TodoView(m *TeaModel, maxHeight int) string {
 			BorderBottom(true).
 			BorderRight(false).
 			BorderLeft(false).
-			BorderForeground(lipgloss.Color("#666666")).
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 
 		idInputView := styles.ChatInputStyle.
-			AlignHorizontal(lipgloss.Left).
 			Width(m.Width).
 			Height(1).
 			BorderTop(true).
-			Border(lipgloss.NormalBorder()).
 			BorderBottom(false).
 			BorderRight(false).
 			BorderLeft(false).
-			BorderForeground(lipgloss.Color("#666666")).
 			Render(idInput.View())
 		idInputHeight := lipgloss.Height(idInputView)
 		descHeight := maxHeight - topHight - inputHeight - idInputHeight
@@ -179,7 +177,6 @@ func AgentView(m *TeaModel, maxHeight int) string {
 		BorderBottom(false).
 		BorderRight(false).
 		BorderLeft(false).
-		BorderForeground(lipgloss.Color("#666666")).
 		Render(m.AgentModel.PromptInput.View())
 
 	bottomPart := lipgloss.Place(
@@ -193,8 +190,6 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	result := lipgloss.JoinVertical(lipgloss.Top, topPart, middle, bottomPart)
 
 	totalHeight := lipgloss.Height(result)
-	m.FLogger.FDebug("Final height - Expected: %d, Actual: %d", maxHeight, totalHeight)
-	m.FLogger.FDebug("Input Height %d | Input View Height %d", inputHeight, lipgloss.Height(inputView))
 	if totalHeight > maxHeight {
 		overflow := totalHeight - maxHeight
 		m.FLogger.FWarn("WARNING: Content exceeds screen height by %d pixels", overflow)
@@ -240,7 +235,6 @@ func HelpBarView(m *TeaModel) (string, int) {
 		for i, choice := range m.TodoModel.Choices {
 			defalutStyles := m.Theme.ModeStyle()
 			if i == totalChoices-1 {
-				m.FLogger.Debug("Adding margin right")
 				defalutStyles = defalutStyles.MarginRight(1)
 			}
 			if choice.Value == m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
@@ -263,6 +257,5 @@ func HelpBarView(m *TeaModel) (string, int) {
 	leftPart := m.Theme.GetInstructionStyle().Width(m.Width - rightWidth).Render("Quit: Esc / Ctrl+C")
 
 	s = lipgloss.JoinHorizontal(lipgloss.Top, leftPart, rightPart)
-	m.FLogger.Debug("HELPBR TOOK HEIGHT OF ", lipgloss.Height(s))
 	return s, lipgloss.Height(s)
 }

@@ -17,23 +17,24 @@ const ChatInstructions = `
 │ Page Up      → Scroll Up         │
 │ Page Down    → Scroll Down       │
 │ Esc / Ctrl+C → Quit              │
+│ send /clear → clear chats        │
 └──────────────────────────────────┘
 `
 
 var (
 	ChatInputStyle = lipgloss.NewStyle().
-		// Background(lipgloss.Color("#130F1A")). // Gray background
-		Foreground(lipgloss.Color("#ffffff")). // White text
-		Padding(0, 1, 2)
+			AlignHorizontal(lipgloss.Left).
+			Foreground(lipgloss.Color("#ffffff")).
+			BorderForeground(lipgloss.Color("#666666")).
+			Border(lipgloss.NormalBorder()).
+			Padding(0, 1, 2)
+
 	PurpleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#f8baff"))
-		// Background(lipgloss.Color("#130F1A"))
 
 	AgentContentStyle = PurpleStyle
-	// Background(lipgloss.Color("#130F1A"))
-	UserContentStyle = lipgloss.NewStyle().
+	UserContentStyle  = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#99faff"))
-		// Background(lipgloss.Color("#130F1A"))
 
 	DescStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#00FFFF")).

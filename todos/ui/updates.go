@@ -3,11 +3,16 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	// "time"
+
 	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/todo"
 	"github.com/biisal/todo-cli/todos/ui/styles"
-	"strconv"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,7 +56,7 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		case 1:
 			_, err := todoAction.AddTodo(m.TodoModel.AddModel.TitleInput.Value(), m.TodoModel.AddModel.DescInput.Value())
 			if err != nil {
-				m.ShowError(err)
+				*cmds = append(*cmds, m.ShowError(err))
 				return
 			}
 			m.RefreshList()
@@ -61,12 +66,12 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		case 2:
 			id, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
 			if err != nil {
-				m.ShowError(WrongTypeIdError)
+				*cmds = append(*cmds, m.ShowError(WrongTypeIdError))
 				return
 			}
 			_, err = todoAction.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
 			if err != nil {
-				m.ShowError(err)
+				*cmds = append(*cmds, m.ShowError(err))
 				return
 			}
 			m.RefreshList()
@@ -99,7 +104,6 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		model.IdInput = input
 		*cmds = append(*cmds, cmd)
 	}
-
 }
 
 func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (tea.Model, *tea.Cmd) {
@@ -130,8 +134,8 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 		if selected != nil {
 			_, err := todoAction.DeleteTodo(selected.(todo.Todo).ID)
 			if err != nil {
-				m.ShowError(err)
-				return m, nil
+				cmd := m.ShowError(err)
+				return m, &cmd
 			}
 			m.RefreshList()
 		}
@@ -171,20 +175,26 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case "down":
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
-			if m.AgentModel.PromptInput.Value() == "" {
+			promtInput := strings.TrimSpace(m.AgentModel.PromptInput.Value())
+			if promtInput == "" {
 				return m, nil
 			}
-			return m, tea.Cmd(func() tea.Msg {
-				_, refresh, err := agentAction.AgentResponse(m.AgentModel.PromptInput.Value(), m.FLogger)
-				if refresh {
-					m.RefreshList()
-				}
-				if err != nil {
-					m.ShowError(err)
+			if promtInput == "/clear" {
+				if err := agentAction.TruncateChats(); err != nil {
+					return m, m.ShowError(err)
 				}
 				m.AgentModel.PromptInput.Reset()
-				return m
-			})
+				return m, nil
+			}
+			_, refresh, err := agentAction.AgentResponse(promtInput, m.FLogger)
+			if refresh {
+				m.RefreshList()
+			}
+			if err != nil {
+				return m, m.ShowError(err)
+			}
+			m.AgentModel.PromptInput.Reset()
+			return m, nil
 		}
 		input, cmd := m.AgentModel.PromptInput.Update(msg)
 		m.AgentModel.PromptInput = input
@@ -193,10 +203,14 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) {
+func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) tea.Cmd {
 	m.Width = msg.Width
 	m.Height = msg.Height
 	m.RefreshList()
+	return tea.Cmd(func() tea.Msg {
+		m.AgentModel.ChatViewport.GotoBottom()
+		return m
+	})
 }
 
 func (m *TeaModel) UpdateDescriptionContent() {
@@ -234,11 +248,16 @@ func (m *TeaModel) RefreshList() {
 	m.TodoModel.ListModel.List = list.New(items, todo.CustomDelegate{Width: innerWidth - 2, Theme: styles.Theme{}}, 0, 0)
 	m.TodoModel.ListModel.List.SetSize(innerWidth, innerHeight)
 	m.TodoModel.ListModel.List.Title = "Todos "
+	m.TodoModel.ListModel.List.SetShowStatusBar(false)
 }
 
 type clearErrorMsg struct{}
 
-func (m *TeaModel) ShowError(err error) {
+func (m *TeaModel) ShowError(err error) tea.Cmd {
+	m.Error = err
+	return tea.Tick(4*time.Second, func(t time.Time) tea.Msg {
+		return clearErrorMsg{}
+	})
 }
 
 func (m *TeaModel) Exit(cmds *[]tea.Cmd) {

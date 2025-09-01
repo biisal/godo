@@ -65,6 +65,16 @@ func AddChatToDB(content agent.Content) error {
 	}
 	return nil
 }
+func TruncateChats() error {
+	// sqlStmt := "TRUNCATE TABLE chats"
+	sqlStmt := "DELETE FROM chats"
+	_, err := config.Cfg.DB.Exec(sqlStmt)
+	if err == nil {
+		History = nil
+	}
+	return err
+
+}
 func getFuncFormatted(name, description string, properties map[string]agent.Property, required []string) agent.FunctionDeclaration {
 	return agent.FunctionDeclaration{
 		Name:        name,
@@ -122,7 +132,7 @@ func stripMarkdown(md string) string {
 	return text
 }
 
-func agentAPICall(refresh ...bool) (bool, error) {
+func agentAPICall(logger *logger.Logger, refresh ...bool) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	isRefresh := false
@@ -201,6 +211,9 @@ You always have access to the current time: ` + currentDateTime,
 				// Handle text content
 				if part.Text != "" {
 					fullMsg += part.Text
+					config.StreamResponse <- part.Text
+					logger.Debug("im not blocked here")
+
 				}
 
 				// Handle function calls
@@ -218,6 +231,7 @@ You always have access to the current time: ` + currentDateTime,
 							},
 						})
 						fullMsg = "" // Reset after adding
+						config.StreamResponse <- ""
 					}
 
 					var result any
@@ -248,7 +262,7 @@ You always have access to the current time: ` + currentDateTime,
 						},
 					})
 
-					return agentAPICall(isRefresh)
+					return agentAPICall(logger, isRefresh)
 				}
 			}
 		}
@@ -285,8 +299,8 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 	AddChatToDB(userInput)
 	config.Ping <- ""
 	var err error
-	refresh, err = agentAPICall()
-	config.Ping <- ""
+	refresh, err = agentAPICall(logger)
+	config.StreamResponse <- "DONE"
 	if err != nil {
 		return nil, refresh, err
 	}

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/models/agent"
 	"github.com/biisal/todo-cli/todos/models/todo"
@@ -13,6 +14,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+func listenForStreamUpdates(logger *logger.Logger) tea.Cmd {
+	return func() tea.Msg {
+		// This will block until a message is available
+		logger.Debug("Listening for stream updates")
+
+		msg := <-config.StreamResponse
+		logger.Debug("Received message: ", msg)
+		return StreamMsg{Text: msg}
+	}
+}
+
+type StreamMsg struct {
+	Text string
+}
 
 var (
 	TodoMode     = todo.Mode{Value: "todoMode", Label: "Todo Mode"}
@@ -35,6 +51,7 @@ type TeaModel struct {
 	Theme         styles.Theme
 	BgStyle       lipgloss.Style
 	FLogger       *logger.Logger
+	ChatContent   string
 }
 
 type eventMsg string
@@ -101,9 +118,19 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	switch msg := msg.(type) {
+	case StreamMsg:
+		m.FLogger.Debug("Received message in Update: ", msg.Text)
+		if msg.Text == "DONE" {
+			m.AgentModel.StreamChunk = ""
+		} else {
+			m.AgentModel.StreamChunk += msg.Text
+		}
+		return m, listenForStreamUpdates(m.FLogger)
 	case clearErrorMsg:
+		m.FLogger.Debug("Clearing Error")
 		m.Error = nil
 		return m, nil
+
 	case tea.WindowSizeMsg:
 		UpdateOnSize(msg, m)
 		return m, nil
@@ -123,10 +150,9 @@ func (m *TeaModel) View() string {
 	hs, helpBarHeight := HelpBarView(m)
 
 	maxHeight := m.Height - helpBarHeight
-	errorView := ""
-	m.FLogger.Debug("Got Ping to UI")
-	if m.EventMsg != "" {
-		errorView = m.Theme.GetEorrorStyle().Width(m.Width - 5).AlignHorizontal(lipgloss.Left).Render(m.EventMsg)
+	var errorView string
+	if m.Error != nil {
+		errorView = m.Theme.GetEorrorStyle().Width(m.Width * 50 / 100).AlignHorizontal(lipgloss.Left).Render(m.Error.Error())
 		maxHeight -= lipgloss.Height(errorView)
 	}
 
@@ -142,7 +168,7 @@ func (m *TeaModel) View() string {
 
 func (m *TeaModel) Init() tea.Cmd {
 	return tea.Batch(
-		// waitForActivity(config.Cfg.Event),
+		listenForStreamUpdates(m.FLogger),
 		textinput.Blink,
 	)
 }

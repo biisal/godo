@@ -7,7 +7,7 @@ import (
 
 type AgentModel struct {
 	PromptInput  textinput.Model
-	Response     string
+	StreamChunk  string
 	ChatViewport viewport.Model
 }
 

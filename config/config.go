@@ -28,6 +28,7 @@ var (
 	Cfg            Config
 	StartTime      time.Time
 	Ping           = make(chan string, 250)
+	StreamResponse = make(chan string, 100)
 	HomeDIR        string
 	AppName        = "logs"
 	LogDIR         string
@@ -71,7 +72,6 @@ func MustLoad() error {
 	}
 	if Cfg.ENVIRONMENT == "" {
 		Cfg.ENVIRONMENT = EnvProduction
-		fmt.Println("Env is not set, using default value:", Cfg.ENVIRONMENT)
 	}
 	if Cfg.ENVIRONMENT == EnvDevelopment {
 		LogDIR = "."
