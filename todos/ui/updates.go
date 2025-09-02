@@ -9,6 +9,7 @@ import (
 
 	// "time"
 
+	"github.com/biisal/todo-cli/config"
 	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
 	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
 	"github.com/biisal/todo-cli/todos/models/todo"
@@ -175,6 +176,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case "down":
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
+			config.StreamResponse <- config.StreamMsg{IsUser: true, Text: m.AgentModel.PromptInput.Value()}
 			promtInput := strings.TrimSpace(m.AgentModel.PromptInput.Value())
 			if promtInput == "" {
 				return m, nil
@@ -186,15 +188,14 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				m.AgentModel.PromptInput.Reset()
 				return m, nil
 			}
-			_, refresh, err := agentAction.AgentResponse(promtInput, m.FLogger)
-			if refresh {
-				m.RefreshList()
-			}
-			if err != nil {
-				return m, m.ShowError(err)
-			}
-			m.AgentModel.PromptInput.Reset()
-			return m, nil
+
+			return m, tea.Cmd(func() tea.Msg {
+				_, refresh, err := agentAction.AgentResponse(promtInput, m.FLogger)
+				return agentResponseMsg{
+					refresh: refresh,
+					err:     err,
+				}
+			})
 		}
 		input, cmd := m.AgentModel.PromptInput.Update(msg)
 		m.AgentModel.PromptInput = input

@@ -211,8 +211,10 @@ You always have access to the current time: ` + currentDateTime,
 				// Handle text content
 				if part.Text != "" {
 					fullMsg += part.Text
-					config.StreamResponse <- part.Text
-					logger.Debug("im not blocked here")
+					for word := range strings.SplitSeq(part.Text, " ") {
+						config.StreamResponse <- config.StreamMsg{Text: word + " "}
+						time.Sleep(50 * time.Millisecond)
+					}
 
 				}
 
@@ -231,7 +233,7 @@ You always have access to the current time: ` + currentDateTime,
 							},
 						})
 						fullMsg = "" // Reset after adding
-						config.StreamResponse <- ""
+						config.StreamResponse <- config.StreamMsg{Text: ""}
 					}
 
 					var result any
@@ -266,7 +268,6 @@ You always have access to the current time: ` + currentDateTime,
 				}
 			}
 		}
-		config.Ping <- ""
 	}
 
 	// Add any remaining text content after processing all chunks
@@ -280,6 +281,7 @@ You always have access to the current time: ` + currentDateTime,
 			},
 		})
 	}
+	// config.StreamResponse <- fullMsg
 	AddChatToDB(History[len(History)-1])
 	return isRefresh, nil
 }
@@ -297,14 +299,14 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 
 	History = append(History, userInput)
 	AddChatToDB(userInput)
-	config.Ping <- ""
 	var err error
+	config.StreamResponse <- config.StreamMsg{Text: "START"}
+	logger.Debug("START SHOULD BE IN UI")
 	refresh, err = agentAPICall(logger)
-	config.StreamResponse <- "DONE"
 	if err != nil {
 		return nil, refresh, err
 	}
-
+	config.StreamResponse <- config.StreamMsg{Text: "DONE"}
 	return History, refresh, nil
 }
 

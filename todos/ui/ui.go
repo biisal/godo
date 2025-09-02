@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/biisal/todo-cli/config"
 	"github.com/biisal/todo-cli/logger"
 	"github.com/biisal/todo-cli/todos/models/agent"
@@ -15,19 +17,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func listenForStreamUpdates(logger *logger.Logger) tea.Cmd {
-	return func() tea.Msg {
-		// This will block until a message is available
-		logger.Debug("Listening for stream updates")
-
-		msg := <-config.StreamResponse
-		logger.Debug("Received message: ", msg)
-		return StreamMsg{Text: msg}
-	}
-}
-
-type StreamMsg struct {
-	Text string
+type agentResponseMsg struct {
+	refresh bool
+	err     error
 }
 
 var (
@@ -51,7 +43,7 @@ type TeaModel struct {
 	Theme         styles.Theme
 	BgStyle       lipgloss.Style
 	FLogger       *logger.Logger
-	ChatContent   string
+	ChatContent   strings.Builder
 }
 
 type eventMsg string
@@ -80,6 +72,7 @@ func getTitleInput(focus bool, s ...string) textinput.Model {
 	return input
 }
 func InitialModel(fLogger *logger.Logger) *TeaModel {
+
 	promptInput := textinput.New()
 	promptInput.Focus()
 	teaModel := TeaModel{
@@ -118,14 +111,24 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	switch msg := msg.(type) {
-	case StreamMsg:
-		m.FLogger.Debug("Received message in Update: ", msg.Text)
-		if msg.Text == "DONE" {
-			m.AgentModel.StreamChunk = ""
-		} else {
-			m.AgentModel.StreamChunk += msg.Text
+	case agentResponseMsg:
+		if msg.refresh {
+			m.RefreshList()
 		}
-		return m, listenForStreamUpdates(m.FLogger)
+		if msg.err != nil {
+			m.Error = msg.err
+		} else {
+			m.AgentModel.PromptInput.Reset()
+		}
+		return m, nil
+	case config.StreamMsg:
+		if msg.IsUser {
+			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(msg.Text) + "\n")
+			return m, nil
+		}
+		m.FLogger.Debug("Received to Update message: ", msg.Text)
+		m.BuildAgentTextUI(msg.Text)
+		return m, nil
 	case clearErrorMsg:
 		m.FLogger.Debug("Clearing Error")
 		m.Error = nil
@@ -168,7 +171,6 @@ func (m *TeaModel) View() string {
 
 func (m *TeaModel) Init() tea.Cmd {
 	return tea.Batch(
-		listenForStreamUpdates(m.FLogger),
 		textinput.Blink,
 	)
 }

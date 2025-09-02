@@ -1,8 +1,10 @@
 package ui
 
 import (
-	agentaction "github.com/biisal/todo-cli/todos/actions/agent"
-	"github.com/biisal/todo-cli/todos/models/agent"
+	// agentaction "github.com/biisal/todo-cli/todos/actions/agent"
+	// "github.com/biisal/todo-cli/todos/models/agent"
+
+	"strings"
 
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/lipgloss"
@@ -94,8 +96,7 @@ func TodoView(m *TeaModel, maxHeight int) string {
 }
 
 func AgentView(m *TeaModel, maxHeight int) string {
-	var chatContent string
-	historyLen := len(agentaction.History)
+	// historyLen := len(agentaction.History)
 
 	outerChatIViewHeight := maxHeight * 80 / 100
 	chatstyle := lipgloss.NewStyle()
@@ -104,46 +105,48 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	m.AgentModel.ChatViewport.Width = m.Width - cWidth
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
-	if historyLen == 0 {
-		m.FLogger.Info("No history - showing welcome screen")
-		logo := styles.Logo + styles.ChatInstructions
-		chatContent = styles.PurpleStyle.
-			AlignHorizontal(lipgloss.Center).
-			AlignVertical(lipgloss.Center).
-			Height(m.AgentModel.ChatViewport.Height).
-			Width(m.AgentModel.ChatViewport.Width).
-			Render(logo)
-	} else {
-		m.FLogger.Info("Processing chat history...")
-		processedMsgs := 0
-		for i, msg := range agentaction.History {
-			if msg.IsToolReq {
-				m.FLogger.FInfo("Skipping tool request message at index %d", i)
-				continue
-			}
-
-			content := ""
-			for _, part := range msg.Parts {
-				content += part.Text
-			}
-
-			if content == "" {
-				m.FLogger.FInfo("Skipping empty message at index %d", i)
-				continue
-			}
-
-			if msg.Role == agent.UserRole {
-				m.FLogger.FInfo("Rendering user message %d", i)
-				chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
-			} else {
-				m.FLogger.FInfo("Rendering agent message %d", i)
-				chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
-			}
-			processedMsgs++
-		}
-		m.FLogger.FInfo("Processed %d messages", processedMsgs)
-	}
-	m.AgentModel.ChatViewport.SetContent(chatContent)
+	// if historyLen == 0 {
+	// 	m.FLogger.Info("No history - showing welcome screen")
+	// 	logo := styles.Logo + styles.ChatInstructions
+	// 	chatContent = styles.PurpleStyle.
+	// 		AlignHorizontal(lipgloss.Center).
+	// 		AlignVertical(lipgloss.Center).
+	// 		Height(m.AgentModel.ChatViewport.Height).
+	// 		Width(m.AgentModel.ChatViewport.Width).
+	// 		Render(logo)
+	// } else {
+	// 	m.FLogger.Info("Processing chat history...")
+	// 	processedMsgs := 0
+	// 	for i, msg := range agentaction.History {
+	// 		if msg.IsToolReq {
+	// 			m.FLogger.FInfo("Skipping tool request message at index %d", i)
+	// 			continue
+	// 		}
+	//
+	// 		content := ""
+	// 		for _, part := range msg.Parts {
+	// 			content += part.Text
+	// 		}
+	//
+	// 		if content == "" {
+	// 			m.FLogger.FInfo("Skipping empty message at index %d", i)
+	// 			continue
+	// 		}
+	//
+	// 		if msg.Role == agent.UserRole {
+	// 			m.FLogger.FInfo("Rendering user message %d", i)
+	// 			chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
+	// 		} else {
+	// 			m.FLogger.FInfo("Rendering agent message %d", i)
+	// 			chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
+	// 		}
+	// 		processedMsgs++
+	// 	}
+	// 	m.FLogger.FInfo("Processed %d messages", processedMsgs)
+	// }
+	m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
+	m.AgentModel.ChatViewport.GotoBottom()
+	m.AgentModel.ChatViewport.Width = m.Width - 5
 
 	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
 
@@ -258,4 +261,18 @@ func HelpBarView(m *TeaModel) (string, int) {
 
 	s = lipgloss.JoinHorizontal(lipgloss.Top, leftPart, rightPart)
 	return s, lipgloss.Height(s)
+}
+
+func (m *TeaModel) BuildAgentTextUI(text string) {
+	style := m.Theme.GetAgentContentStyle().Width(m.Width).Render(":)|")
+	splitted := strings.SplitN(style, ":)|", 2)
+	prefix, suffix := splitted[0], splitted[1]
+	switch text {
+	case "START":
+		m.ChatContent.WriteString(prefix)
+	case "DONE":
+		m.ChatContent.WriteString(suffix)
+	default:
+		m.ChatContent.WriteString(text)
+	}
 }

@@ -30,6 +30,13 @@ func main() {
 	}
 	agent.History = *history
 	tea.ClearScreen()
+	go func() {
+		for msg := range config.StreamResponse {
+			m.FLogger.Debug("Got message: ", msg)
+			p.Send(config.StreamMsg{Text: msg.Text, IsUser: msg.IsUser})
+			m.FLogger.Debug("Send message: ", msg)
+		}
+	}()
 	if _, err := p.Run(); err != nil {
 		m.FLogger.Error("Error running program:", err)
 		fmt.Printf("Alas, there's been an error: %v", err)

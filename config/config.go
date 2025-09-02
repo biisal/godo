@@ -22,13 +22,18 @@ type Config struct {
 	DB             *sql.DB
 }
 
+type StreamMsg struct {
+	Text   string
+	IsUser bool
+}
+
 var (
 	EnvProduction  = "prod"
 	EnvDevelopment = "dev"
 	Cfg            Config
 	StartTime      time.Time
 	Ping           = make(chan string, 250)
-	StreamResponse = make(chan string, 100)
+	StreamResponse = make(chan StreamMsg, 1)
 	HomeDIR        string
 	AppName        = "logs"
 	LogDIR         string
