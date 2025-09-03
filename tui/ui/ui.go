@@ -5,10 +5,10 @@ import (
 
 	"github.com/biisal/godo/config"
 	"github.com/biisal/godo/logger"
-	"github.com/biisal/godo/todos/models/agent"
-	"github.com/biisal/godo/todos/models/todo"
+	"github.com/biisal/godo/tui/models/agent"
+	"github.com/biisal/godo/tui/models/todo"
 
-	"github.com/biisal/godo/todos/ui/styles"
+	"github.com/biisal/godo/tui/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"

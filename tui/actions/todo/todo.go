@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/todos/models/todo"
+	"github.com/biisal/godo/tui/models/todo"
 )
 
 var (

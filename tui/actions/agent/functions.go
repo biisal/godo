@@ -1,6 +1,6 @@
 package agent
 
-import "github.com/biisal/godo/todos/models/agent"
+import "github.com/biisal/godo/tui/models/agent"
 
 func FormattedFunctions() []agent.Tool {
 	return []agent.Tool{

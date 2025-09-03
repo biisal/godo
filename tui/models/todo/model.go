@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/biisal/godo/todos/ui/styles"
+	"github.com/biisal/godo/tui/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"

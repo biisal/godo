@@ -6,8 +6,8 @@ import (
 
 	"github.com/biisal/godo/config"
 	"github.com/biisal/godo/logger"
-	"github.com/biisal/godo/todos/actions/agent"
-	"github.com/biisal/godo/todos/ui"
+	"github.com/biisal/godo/tui/actions/agent"
+	"github.com/biisal/godo/tui/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -16,6 +16,7 @@ func main() {
 	Flogger.Info("Starting GODO-AGENT")
 	defer Flogger.Close()
 	if err := config.MustLoad(); err != nil {
+		Flogger.Error("Error loading config:", err)
 		fmt.Printf("Failed To Load Config %v: ", err)
 		os.Exit(1)
 	}

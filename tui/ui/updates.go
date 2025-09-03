@@ -10,10 +10,10 @@ import (
 	// "time"
 
 	"github.com/biisal/godo/config"
-	agentAction "github.com/biisal/godo/todos/actions/agent"
-	todoAction "github.com/biisal/godo/todos/actions/todo"
-	"github.com/biisal/godo/todos/models/todo"
-	"github.com/biisal/godo/todos/ui/styles"
+	agentAction "github.com/biisal/godo/tui/actions/agent"
+	todoAction "github.com/biisal/godo/tui/actions/todo"
+	"github.com/biisal/godo/tui/models/todo"
+	"github.com/biisal/godo/tui/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"

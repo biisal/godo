@@ -13,8 +13,8 @@ import (
 
 	"github.com/biisal/godo/config"
 	"github.com/biisal/godo/logger"
-	"github.com/biisal/godo/todos/actions/todo"
-	"github.com/biisal/godo/todos/models/agent"
+	"github.com/biisal/godo/tui/actions/todo"
+	"github.com/biisal/godo/tui/models/agent"
 	"github.com/mitchellh/mapstructure"
 )
 
