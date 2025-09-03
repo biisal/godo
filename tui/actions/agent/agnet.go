@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -30,19 +31,6 @@ var (
 	History          = make([]agent.Content, 0)
 )
 
-func sendDummyResponse() {
-	text := `Hello there! I’m an AI assistant designed to help you with a wide variety of tasks. Whether you need assistance with writing, coding, learning new concepts, brainstorming ideas, or just having a conversation, I’m here to support you.
-
-I can generate text, explain complex topics in simple terms, provide step-by-step guidance, and even help you plan projects or solve problems. For example, if you’re working on a programming project, I can suggest code snippets, debug errors, or explain how certain algorithms work. If you’re learning a new subject, I can break it down into manageable parts and give examples to make it easier to understand.
-
-I’m also capable of creative tasks—like drafting stories, creating dialogues, or imagining scenarios—and analytical tasks, like summarizing information, comparing options, or generating structured plans. My main goal is to be helpful, informative, and easy to understand, while adapting to your style and preferences.
-
-So, whether you have a specific question, want to explore ideas, or just want to experiment with AI, feel free to ask me anything. I’ll provide responses that are clear, thorough, and tailored to your needs. Let’s make your tasks easier and more fun together!`
-	for word := range strings.SplitSeq(text, " ") {
-		config.StreamResponse <- config.StreamMsg{Text: word + " "}
-	}
-
-}
 func GetChatHistoryFromDB() (*[]agent.Content, error) {
 	sqlStmt := "SELECT chat FROM chats"
 	rows, err := config.Cfg.DB.Query(sqlStmt)
@@ -181,9 +169,15 @@ You always have access to the current time: ` + currentDateTime,
 		return isRefresh, err
 	}
 	if resp.StatusCode != 200 {
-		body := make([]byte, 1024)
-		resp.Body.Read(body)
-		return isRefresh, fmt.Errorf("unexpected status code: %d, reason: %s", resp.StatusCode, string(body))
+		var errMsg agent.AgentError
+		if err := json.NewDecoder(resp.Body).Decode(&errMsg); err != nil {
+			logger.FError("failed to decode error message: %s", err.Error())
+			return isRefresh, fmt.Errorf("failed to decode error message: %w", err)
+		}
+		if errMsg.Error.Message == "" {
+			return isRefresh, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+		return isRefresh, errors.New(errMsg.Error.Message)
 	}
 	defer resp.Body.Close()
 	var msgStruct agent.AgentRes
@@ -299,9 +293,7 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 	AddChatToDB(userInput)
 	var err error
 	config.StreamResponse <- config.StreamMsg{Text: "START"}
-	logger.Debug("START SHOULD BE IN UI")
 	refresh, err = agentAPICall(logger)
-	// sendDummyResponse()
 	if err != nil {
 		return nil, refresh, err
 	}

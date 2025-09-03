@@ -211,10 +211,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) tea.Cmd {
 	m.Height = msg.Height
 	m.RefreshList()
 	m.RenderChatContentFromHistory()
-	return tea.Cmd(func() tea.Msg {
-		m.AgentModel.ChatViewport.GotoBottom()
-		return m
-	})
+	return nil
 }
 
 func (m *TeaModel) UpdateDescriptionContent() {

@@ -57,6 +57,21 @@ func (t Theme) GetBackground() lipgloss.Color {
 	return lipgloss.Color("#15141a")
 }
 
+func (t Theme) GetErrorInChatStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FF8699")).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#960018")).
+		BorderRight(false).
+		BorderLeft(true).
+		BorderBottom(false).
+		BorderTop(false).
+		Padding(1, 1, 1).
+		MarginTop(1).
+		MarginBottom(1).
+		Background(lipgloss.Color("#1a0a0a")).
+		BorderForeground(lipgloss.Color("#960018"))
+}
 func (t Theme) GetUserContentStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#99faff")).

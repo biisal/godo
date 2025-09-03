@@ -292,5 +292,9 @@ func (m *TeaModel) RenderChatContentFromHistory() {
 			m.ChatContent.WriteString(text + "\n")
 		}
 	}
-	m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
+	content := m.ChatContent.String()
+	m.AgentModel.ChatViewport.SetContent(content)
+	if len(content) > 0 && m.AgentModel.ChatViewport.Height > 0 {
+		m.AgentModel.ChatViewport.GotoBottom()
+	}
 }

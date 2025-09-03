@@ -169,3 +169,10 @@ type AgentRes struct {
 	ModelVersion  string        `json:"modelVersion,omitempty"`
 	ResponseId    string        `json:"responseId,omitempty"`
 }
+type Error struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+type AgentError struct {
+	Error Error `json:"error"`
+}

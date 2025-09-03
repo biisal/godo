@@ -113,7 +113,9 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.RefreshList()
 		}
 		if msg.err != nil {
-			m.Error = msg.err
+			m.ChatContent.WriteString(m.Theme.GetErrorInChatStyle().Width(m.Width).Render(msg.err.Error()) + "\n")
+			m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
+			m.AgentModel.ChatViewport.GotoBottom()
 		} else {
 			m.AgentModel.PromptInput.Reset()
 		}

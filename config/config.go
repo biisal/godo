@@ -25,6 +25,7 @@ type Config struct {
 type StreamMsg struct {
 	Text   string
 	IsUser bool
+	Type   string
 }
 
 var (
@@ -38,6 +39,8 @@ var (
 	AppDIR         = "/.local/share/godo/"
 	AppName        = "logs"
 	LogDIR         string
+	EroorType      = "error"
+	MessageType    = "message"
 )
 
 func loadEnv(paths []string) error {
