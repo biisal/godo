@@ -56,11 +56,11 @@ func MustLoad() error {
 	if err != nil {
 		return fmt.Errorf("Failed to get user home directory for writing logs and todos: %s", err.Error())
 	}
-
-	if err := loadEnv([]string{HomeDIR + AppDIR + ".env", "./.env"}); err != nil {
-
+	if err = os.MkdirAll(HomeDIR+AppDIR, os.ModePerm); err != nil {
 		return err
 	}
+
+	loadEnv([]string{HomeDIR + AppDIR + ".env", "./.env"})
 
 	if err := cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
