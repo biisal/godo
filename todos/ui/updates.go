@@ -24,6 +24,8 @@ var WrongTypeIdError = errors.New("ID Should be a number")
 
 func SetUpDefalutKeys(key string, m *TeaModel) {
 	switch key {
+	case "ctrl+b":
+		m.IsShowHelp = !m.IsShowHelp
 	case "ctrl+a":
 		if len(m.Choices) > m.SelectedIndex+1 {
 			m.SelectedIndex++
@@ -153,7 +155,6 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	defer SetUpDefalutKeys(key, m)
 	if key == "ctrl+c" {
-		m.IsExiting = true
 		return m, tea.Quit
 	}
 	switch m.Choices[m.SelectedIndex].Value {
@@ -176,7 +177,6 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case "down":
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
-			config.StreamResponse <- config.StreamMsg{IsUser: true, Text: m.AgentModel.PromptInput.Value()}
 			promtInput := strings.TrimSpace(m.AgentModel.PromptInput.Value())
 			if promtInput == "" {
 				return m, nil
@@ -185,10 +185,12 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				if err := agentAction.TruncateChats(); err != nil {
 					return m, m.ShowError(err)
 				}
+				m.ChatContent.Reset()
 				m.AgentModel.PromptInput.Reset()
 				return m, nil
 			}
 
+			config.StreamResponse <- config.StreamMsg{IsUser: true, Text: promtInput}
 			return m, tea.Cmd(func() tea.Msg {
 				_, refresh, err := agentAction.AgentResponse(promtInput, m.FLogger)
 				return agentResponseMsg{
@@ -208,6 +210,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) tea.Cmd {
 	m.Width = msg.Width
 	m.Height = msg.Height
 	m.RefreshList()
+	m.RenderChatContentFromHistory()
 	return tea.Cmd(func() tea.Msg {
 		m.AgentModel.ChatViewport.GotoBottom()
 		return m

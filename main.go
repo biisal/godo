@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Debug)
+	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Error)
+	Flogger.Info("Starting GODO-AGENT")
 	defer Flogger.Close()
 	if err := config.MustLoad(); err != nil {
 		fmt.Printf("Failed To Load Config %v: ", err)
@@ -32,9 +33,9 @@ func main() {
 	tea.ClearScreen()
 	go func() {
 		for msg := range config.StreamResponse {
-			m.FLogger.Debug("Got message: ", msg)
+			m.FLogger.Info("Got message: ", msg)
 			p.Send(config.StreamMsg{Text: msg.Text, IsUser: msg.IsUser})
-			m.FLogger.Debug("Send message: ", msg)
+			m.FLogger.Info("Send message: ", msg)
 		}
 	}()
 	if _, err := p.Run(); err != nil {

@@ -60,27 +60,21 @@ func (t Theme) GetBackground() lipgloss.Color {
 func (t Theme) GetUserContentStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#99faff")).
-		// Background(lipgloss.Color("#130F1A")).
-		Border(lipgloss.RoundedBorder()).
-		BorderLeft(true).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#99faff")).
 		BorderRight(false).
-		BorderTop(false).
+		BorderLeft(true).
 		BorderBottom(false).
-		Padding(0, 1).
-		Margin(1, 1, 0).
+		BorderTop(false).
+		Padding(1, 1, 1).
+		MarginTop(1).
+		MarginBottom(1).
+		Background(lipgloss.Color("#0B0C0D")).
 		BorderForeground(lipgloss.Color("#99faff"))
 }
 func (t Theme) GetAgentContentStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#f8baff")).
-		// Background(lipgloss.Color("#130F1A")).
-		Border(lipgloss.RoundedBorder()).
-		BorderLeft(false).
-		BorderRight(false).
-		BorderTop(false).
-		Padding(0, 1).
-		Margin(1, 1, 2).
-		BorderBottom(false).
 		BorderForeground(lipgloss.Color("#f8baff"))
 }
 func (t Theme) GetBorderColor() lipgloss.Color {

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -31,6 +30,19 @@ var (
 	History          = make([]agent.Content, 0)
 )
 
+func sendDummyResponse() {
+	text := `Hello there! I’m an AI assistant designed to help you with a wide variety of tasks. Whether you need assistance with writing, coding, learning new concepts, brainstorming ideas, or just having a conversation, I’m here to support you.
+
+I can generate text, explain complex topics in simple terms, provide step-by-step guidance, and even help you plan projects or solve problems. For example, if you’re working on a programming project, I can suggest code snippets, debug errors, or explain how certain algorithms work. If you’re learning a new subject, I can break it down into manageable parts and give examples to make it easier to understand.
+
+I’m also capable of creative tasks—like drafting stories, creating dialogues, or imagining scenarios—and analytical tasks, like summarizing information, comparing options, or generating structured plans. My main goal is to be helpful, informative, and easy to understand, while adapting to your style and preferences.
+
+So, whether you have a specific question, want to explore ideas, or just want to experiment with AI, feel free to ask me anything. I’ll provide responses that are clear, thorough, and tailored to your needs. Let’s make your tasks easier and more fun together!`
+	for word := range strings.SplitSeq(text, " ") {
+		config.StreamResponse <- config.StreamMsg{Text: word + " "}
+	}
+
+}
 func GetChatHistoryFromDB() (*[]agent.Content, error) {
 	sqlStmt := "SELECT chat FROM chats"
 	rows, err := config.Cfg.DB.Query(sqlStmt)
@@ -85,20 +97,6 @@ func getFuncFormatted(name, description string, properties map[string]agent.Prop
 			Properties: properties,
 		},
 	}
-}
-
-func renderMarkdown(md string) string {
-	cmd := exec.Command("glow", "-") // "-" tells glow to read from stdin
-	cmd.Stdin = bytes.NewBufferString(md)
-
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	err := cmd.Run()
-	if err != nil {
-		return md // fallback: return raw Markdown if glow fails
-	}
-	return out.String()
 }
 
 // AI generated helper function
@@ -213,7 +211,7 @@ You always have access to the current time: ` + currentDateTime,
 					fullMsg += part.Text
 					for word := range strings.SplitSeq(part.Text, " ") {
 						config.StreamResponse <- config.StreamMsg{Text: word + " "}
-						time.Sleep(50 * time.Millisecond)
+						time.Sleep(20 * time.Millisecond)
 					}
 
 				}
@@ -303,6 +301,7 @@ func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool,
 	config.StreamResponse <- config.StreamMsg{Text: "START"}
 	logger.Debug("START SHOULD BE IN UI")
 	refresh, err = agentAPICall(logger)
+	// sendDummyResponse()
 	if err != nil {
 		return nil, refresh, err
 	}

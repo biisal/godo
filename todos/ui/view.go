@@ -4,10 +4,15 @@ import (
 	// agentaction "github.com/biisal/todo-cli/todos/actions/agent"
 	// "github.com/biisal/todo-cli/todos/models/agent"
 
+	// "strings"
+
 	"strings"
 
+	// wordwrap
+	"github.com/biisal/todo-cli/todos/actions/agent"
 	"github.com/biisal/todo-cli/todos/ui/styles"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 func RenderListView(m *TeaModel, maxHeight int) string {
@@ -99,55 +104,14 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	// historyLen := len(agentaction.History)
 
 	outerChatIViewHeight := maxHeight * 80 / 100
-	chatstyle := lipgloss.NewStyle()
+	chatstyle := lipgloss.NewStyle().PaddingLeft(3).PaddingRight(2).PaddingBottom(1).Width(m.Width).Foreground(m.Theme.GetAgentContentStyle().GetForeground())
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
-	m.AgentModel.ChatViewport.Width = m.Width - cWidth
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
-	// if historyLen == 0 {
-	// 	m.FLogger.Info("No history - showing welcome screen")
-	// 	logo := styles.Logo + styles.ChatInstructions
-	// 	chatContent = styles.PurpleStyle.
-	// 		AlignHorizontal(lipgloss.Center).
-	// 		AlignVertical(lipgloss.Center).
-	// 		Height(m.AgentModel.ChatViewport.Height).
-	// 		Width(m.AgentModel.ChatViewport.Width).
-	// 		Render(logo)
-	// } else {
-	// 	m.FLogger.Info("Processing chat history...")
-	// 	processedMsgs := 0
-	// 	for i, msg := range agentaction.History {
-	// 		if msg.IsToolReq {
-	// 			m.FLogger.FInfo("Skipping tool request message at index %d", i)
-	// 			continue
-	// 		}
-	//
-	// 		content := ""
-	// 		for _, part := range msg.Parts {
-	// 			content += part.Text
-	// 		}
-	//
-	// 		if content == "" {
-	// 			m.FLogger.FInfo("Skipping empty message at index %d", i)
-	// 			continue
-	// 		}
-	//
-	// 		if msg.Role == agent.UserRole {
-	// 			m.FLogger.FInfo("Rendering user message %d", i)
-	// 			chatContent += m.Theme.GetUserContentStyle().Width(m.Width).Render(content) + "\n"
-	// 		} else {
-	// 			m.FLogger.FInfo("Rendering agent message %d", i)
-	// 			chatContent += m.Theme.GetAgentContentStyle().Width(m.Width).Render(content)
-	// 		}
-	// 		processedMsgs++
-	// 	}
-	// 	m.FLogger.FInfo("Processed %d messages", processedMsgs)
-	// }
-	m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
-	m.AgentModel.ChatViewport.GotoBottom()
-	m.AgentModel.ChatViewport.Width = m.Width - 5
-
+	m.AgentModel.ChatViewport.Style.Foreground(m.Theme.GetAgentContentStyle().GetForeground())
+	m.AgentModel.ChatViewport.Width = m.Width - cWidth
+	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), m.Width-cWidth))
 	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
 
 	// Top section
@@ -200,36 +164,83 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	return result
 }
 
-// func ExitView() string {
-// 	timeSpent := time.Since(config.StartTime).Round(time.Second).String()
-// 	timeStr := fmt.Sprintf("%v", timeSpent)
-// 	totalTodos, completed, remains, err := todoaction.GetTodosInfo()
-// 	var s string
-// 	if err == nil {
-// 		columns := []table.Column{
-// 			{
-// 				Title: "SUMMURY",
-// 				Width: 20,
-// 			},
-// 			{
-// 				Title: "",
-// 				Width: 20,
-// 			},
-// 		}
-// 		rows := []table.Row{
-// 			{"Time Spent", timeStr},
-// 			{"Total Todos", strconv.Itoa(totalTodos)},
-// 			{"Completed", strconv.Itoa(completed)},
-// 			{"Remains", strconv.Itoa(remains)},
-// 		}
-// 		t := table.New(table.WithColumns(columns), table.WithRows(rows))
-// 		t.SetHeight(5)
+//	func ExitView() string {
+//		timeSpent := time.Since(config.StartTime).Round(time.Second).String()
+//		timeStr := fmt.Sprintf("%v", timeSpent)
+//		totalTodos, completed, remains, err := todoaction.GetTodosInfo()
+//		var s string
+//		if err == nil {
+//			columns := []table.Column{
+//				{
+//					Title: "SUMMURY",
+//					Width: 20,
+//				},
+//				{
+//					Title: "",
+//					Width: 20,
+//				},
+//			}
+//			rows := []table.Row{
+//				{"Time Spent", timeStr},
+//				{"Total Todos", strconv.Itoa(totalTodos)},
+//				{"Completed", strconv.Itoa(completed)},
+//				{"Remains", strconv.Itoa(remains)},
+//			}
+//			t := table.New(table.WithColumns(columns), table.WithRows(rows))
+//			t.SetHeight(5)
 //
-// 		s = styles.BoxStyle.Render(t.View()) + "\n\n"
-// 	}
-// 	return s
-// }
+//			s = styles.BoxStyle.Render(t.View()) + "\n\n"
+//		}
+//		return s
+//	}
+func HelpPageView(m *TeaModel, maxHeight int) string {
+	leftHelp := `Help
 
+Global:
+  ctrl+b     toggle help
+  ctrl+a     toggle todo <-> agent 
+  ctrl+c     quit
+  
+Navigation:  
+  ctrl+h/←   previous choice
+  ctrl+l/→   next choice
+
+Todo List:
+  enter      toggle done
+  ctrl+e     edit todo
+  j/k        next/previous todo 
+  `
+
+	rightHelp := `Forms:
+  tab        next field
+  ctrl+s     save
+  
+Agent:
+  enter      send message
+  up/down    scroll chat
+  /clear     clear history
+
+Actions:
+  delete     remove todo
+
+Press ctrl+u to close`
+
+	style := lipgloss.NewStyle().
+		Padding(2).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.Theme.GetBorderColor()).
+		Foreground(lipgloss.Color("#ffffff")).
+		Width(m.Width * 40 / 100)
+
+	leftPanel := style.Render(leftHelp)
+	rightPanel := style.Render(rightHelp)
+
+	combined := lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, rightPanel)
+
+	return lipgloss.Place(m.Width, maxHeight,
+		lipgloss.Center, lipgloss.Center,
+		combined)
+}
 func HelpBarView(m *TeaModel) (string, int) {
 	var s string
 	modeUi := ""
@@ -257,22 +268,35 @@ func HelpBarView(m *TeaModel) (string, int) {
 	rightPart := m.Theme.GetInstructionStyle().AlignHorizontal(lipgloss.Right).Render(modeUi)
 	rightWidth := lipgloss.Width(rightPart)
 
-	leftPart := m.Theme.GetInstructionStyle().Width(m.Width - rightWidth).Render("Quit: Esc / Ctrl+C")
+	leftPart := m.Theme.GetInstructionStyle().Width(m.Width - rightWidth).Render("Help: Ctrl+b")
 
 	s = lipgloss.JoinHorizontal(lipgloss.Top, leftPart, rightPart)
 	return s, lipgloss.Height(s)
 }
 
 func (m *TeaModel) BuildAgentTextUI(text string) {
-	style := m.Theme.GetAgentContentStyle().Width(m.Width).Render(":)|")
-	splitted := strings.SplitN(style, ":)|", 2)
-	prefix, suffix := splitted[0], splitted[1]
+	defer m.AgentModel.ChatViewport.GotoBottom()
+
 	switch text {
 	case "START":
-		m.ChatContent.WriteString(prefix)
 	case "DONE":
-		m.ChatContent.WriteString(suffix)
+		m.ChatContent.WriteString("\n")
 	default:
+		text = strings.ReplaceAll(text, "**", "")
 		m.ChatContent.WriteString(text)
 	}
+}
+
+func (m *TeaModel) RenderChatContentFromHistory() {
+	m.ChatContent.Reset()
+	for _, msg := range agent.History {
+		text := msg.Parts[0].Text
+		switch msg.Role {
+		case "user":
+			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(text))
+		default:
+			m.ChatContent.WriteString(text + "\n")
+		}
+	}
+	m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
 }

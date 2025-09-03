@@ -1,10 +1,8 @@
 package todo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -46,19 +44,6 @@ func GetTodosCount() string {
 		return "Not Found"
 	}
 	return "Total Todos: " + strconv.Itoa(len(todos))
-}
-
-func WriteTodos(todos []todo.Todo) error {
-	path := config.TodoFilePath
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	for i := range todos {
-		todos[i].ID = i
-	}
-	defer file.Close()
-	return json.NewEncoder(file).Encode(todos)
 }
 
 func AddTodo(title, description string) ([]todo.Todo, error) {

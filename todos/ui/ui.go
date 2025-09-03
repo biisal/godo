@@ -31,8 +31,7 @@ var (
 )
 
 type TeaModel struct {
-	IsExiting     bool
-	EventMsg      string
+	IsShowHelp    bool
 	Choices       []todo.Mode
 	SelectedIndex int
 	TodoModel     todo.TodoModel
@@ -45,8 +44,6 @@ type TeaModel struct {
 	FLogger       *logger.Logger
 	ChatContent   strings.Builder
 }
-
-type eventMsg string
 
 //	func waitForActivity(ev chan string) tea.Cmd {
 //		return func() tea.Msg {
@@ -77,7 +74,7 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 	promptInput.Focus()
 	teaModel := TeaModel{
 		FLogger:       fLogger,
-		SelectedIndex: 0,
+		SelectedIndex: 1,
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
 			AddModel: todo.TodoForm{
@@ -137,8 +134,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		UpdateOnSize(msg, m)
 		return m, nil
-	case eventMsg:
-		m.EventMsg = string(msg)
 	case tea.KeyMsg:
 		_, cmd := UpdateOnKey(msg, m)
 		if cmd != nil {
@@ -159,11 +154,15 @@ func (m *TeaModel) View() string {
 		maxHeight -= lipgloss.Height(errorView)
 	}
 
-	switch m.Choices[m.SelectedIndex].Value {
-	case TodoMode.Value:
-		s += TodoView(m, maxHeight)
-	case AgentMode.Value:
-		s += AgentView(m, maxHeight)
+	if m.IsShowHelp {
+		s += HelpPageView(m, maxHeight)
+	} else {
+		switch m.Choices[m.SelectedIndex].Value {
+		case TodoMode.Value:
+			s += TodoView(m, maxHeight)
+		case AgentMode.Value:
+			s += AgentView(m, maxHeight)
+		}
 	}
 	s = lipgloss.JoinVertical(lipgloss.Center, errorView, s, hs)
 	return s

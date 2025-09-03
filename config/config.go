@@ -35,9 +35,9 @@ var (
 	Ping           = make(chan string, 250)
 	StreamResponse = make(chan StreamMsg, 1)
 	HomeDIR        string
+	AppDIR         = "/.local/share/godo/"
 	AppName        = "logs"
 	LogDIR         string
-	TodoFilePath   string
 )
 
 func loadEnv(paths []string) error {
@@ -57,7 +57,8 @@ func MustLoad() error {
 		return fmt.Errorf("Failed to get user home directory for writing logs and todos: %s", err.Error())
 	}
 
-	if err := loadEnv([]string{HomeDIR + "/.local/share/godo/.env", "./.env"}); err != nil {
+	if err := loadEnv([]string{HomeDIR + AppDIR + ".env", "./.env"}); err != nil {
+
 		return err
 	}
 
@@ -65,31 +66,26 @@ func MustLoad() error {
 		return err
 	}
 	StartTime = time.Now()
+	if err = getApiKey(); err != nil {
+		return err
+	}
 	if Cfg.GEMINI_MODEL == "" {
 		Cfg.GEMINI_MODEL = "gemini-2.5-flash"
 		fmt.Println("GEMINI_MODEL is not set, using default value:", Cfg.GEMINI_MODEL)
-	}
-	if Cfg.GEMINI_API_KEY == "" {
-		Cfg.GEMINI_API_KEY = os.Getenv("GEMINI_API_KEY")
-	}
-	if Cfg.GEMINI_API_KEY == "" {
-		return fmt.Errorf("GEMINI_API_KEY is not set")
 	}
 	if Cfg.ENVIRONMENT == "" {
 		Cfg.ENVIRONMENT = EnvProduction
 	}
 	if Cfg.ENVIRONMENT == EnvDevelopment {
 		LogDIR = "."
-		TodoFilePath = "./agentTodos.json"
 	} else {
-		LogDIR = HomeDIR + "/local/share/godo"
-		TodoFilePath = HomeDIR + "/local/share/godo/agentTodos.json"
+		LogDIR = HomeDIR + AppDIR
 	}
 	if Cfg.DB_PATH == "" {
 		if Cfg.DB_NAME == "" {
 			Cfg.DB_NAME = "todo.db"
 		}
-		Cfg.DB_PATH = HomeDIR + "/local/share/godo/" + Cfg.DB_NAME
+		Cfg.DB_PATH = HomeDIR + AppDIR + Cfg.DB_NAME
 	}
 	if err = initDb(); err != nil {
 		return err
@@ -121,4 +117,33 @@ func initDb() error {
 	}
 	Cfg.DB = db
 	return nil
+}
+
+func getApiKey() error {
+	Cfg.GEMINI_API_KEY = os.Getenv("GEMINI_API_KEY")
+	if Cfg.GEMINI_API_KEY == "" {
+		fmt.Println("Enter your gemini api key")
+		input := ""
+		fmt.Scanln(&input)
+		Cfg.GEMINI_API_KEY = input
+		if err := saveApiKey(Cfg.GEMINI_API_KEY); err != nil {
+			return err
+		}
+	}
+	if Cfg.GEMINI_API_KEY == "" {
+		return fmt.Errorf("GEMINI_API_KEY is not set")
+	}
+	return nil
+}
+
+func saveApiKey(key string) error {
+	file := HomeDIR + AppDIR + ".env"
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString("GEMINI_API_KEY=" + key + "\n")
+	return err
+
 }
