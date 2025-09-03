@@ -6,7 +6,7 @@
 ## Installation
 
 ```bash
-go get github.com/biisal/godo
+go install github.com/biisal/godo@latest
 ```
 ## What makes GODO unique?
 1. **AI AI AI** - Nowdays AI is eveywhere :) why not use the free gemini api and not to waste it :)
