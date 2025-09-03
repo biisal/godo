@@ -1,4 +1,4 @@
-module github.com/biisal/todo-cli
+module github.com/biisal/godo
 
 go 1.24.4
 

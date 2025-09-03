@@ -1,16 +1,16 @@
 package ui
 
 import (
-	// agentaction "github.com/biisal/todo-cli/todos/actions/agent"
-	// "github.com/biisal/todo-cli/todos/models/agent"
+	// agentaction "github.com/biisal/godo/todos/actions/agent"
+	// "github.com/biisal/godo/todos/models/agent"
 
 	// "strings"
 
 	"strings"
 
 	// wordwrap
-	"github.com/biisal/todo-cli/todos/actions/agent"
-	"github.com/biisal/todo-cli/todos/ui/styles"
+	"github.com/biisal/godo/todos/actions/agent"
+	"github.com/biisal/godo/todos/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
 )

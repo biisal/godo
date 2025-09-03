@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/biisal/todo-cli/config"
-	"github.com/biisal/todo-cli/logger"
-	"github.com/biisal/todo-cli/todos/actions/agent"
-	"github.com/biisal/todo-cli/todos/ui"
+	"github.com/biisal/godo/config"
+	"github.com/biisal/godo/logger"
+	"github.com/biisal/godo/todos/actions/agent"
+	"github.com/biisal/godo/todos/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

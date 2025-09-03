@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biisal/todo-cli/config"
-	"github.com/biisal/todo-cli/todos/models/todo"
+	"github.com/biisal/godo/config"
+	"github.com/biisal/godo/todos/models/todo"
 )
 
 var (

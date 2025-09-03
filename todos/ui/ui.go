@@ -3,12 +3,12 @@ package ui
 import (
 	"strings"
 
-	"github.com/biisal/todo-cli/config"
-	"github.com/biisal/todo-cli/logger"
-	"github.com/biisal/todo-cli/todos/models/agent"
-	"github.com/biisal/todo-cli/todos/models/todo"
+	"github.com/biisal/godo/config"
+	"github.com/biisal/godo/logger"
+	"github.com/biisal/godo/todos/models/agent"
+	"github.com/biisal/godo/todos/models/todo"
 
-	"github.com/biisal/todo-cli/todos/ui/styles"
+	"github.com/biisal/godo/todos/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"

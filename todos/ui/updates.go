@@ -9,11 +9,11 @@ import (
 
 	// "time"
 
-	"github.com/biisal/todo-cli/config"
-	agentAction "github.com/biisal/todo-cli/todos/actions/agent"
-	todoAction "github.com/biisal/todo-cli/todos/actions/todo"
-	"github.com/biisal/todo-cli/todos/models/todo"
-	"github.com/biisal/todo-cli/todos/ui/styles"
+	"github.com/biisal/godo/config"
+	agentAction "github.com/biisal/godo/todos/actions/agent"
+	todoAction "github.com/biisal/godo/todos/actions/todo"
+	"github.com/biisal/godo/todos/models/todo"
+	"github.com/biisal/godo/todos/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"

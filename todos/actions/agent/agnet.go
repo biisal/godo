@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biisal/todo-cli/config"
-	"github.com/biisal/todo-cli/logger"
-	"github.com/biisal/todo-cli/todos/actions/todo"
-	"github.com/biisal/todo-cli/todos/models/agent"
+	"github.com/biisal/godo/config"
+	"github.com/biisal/godo/logger"
+	"github.com/biisal/godo/todos/actions/todo"
+	"github.com/biisal/godo/todos/models/agent"
 	"github.com/mitchellh/mapstructure"
 )
 
