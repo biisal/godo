@@ -17,6 +17,7 @@ type Config struct {
 	GEMINI_MODEL   string `env:"GEMINI_MODEL"`
 	GEMINI_API_KEY string `env:"GEMINI_API_KEY"`
 	ENVIRONMENT    string `env:"ENVIRONMENT"`
+	MODE           string `env:"MODE"`
 	DB_PATH        string
 	DB_NAME        string
 	DB             *sql.DB
@@ -31,6 +32,8 @@ type StreamMsg struct {
 var (
 	EnvProduction  = "prod"
 	EnvDevelopment = "dev"
+	ModeTodo       = "todo"
+	ModeAgent      = "agent"
 	Cfg            Config
 	StartTime      time.Time
 	Ping           = make(chan string, 250)
@@ -84,15 +87,42 @@ func MustLoad() error {
 	} else {
 		LogDIR = HomeDIR + AppDIR
 	}
+	if Cfg.MODE == "" {
+		Cfg.MODE = "agent"
+	}
 	if Cfg.DB_PATH == "" {
 		if Cfg.DB_NAME == "" {
 			Cfg.DB_NAME = "todo.db"
 		}
 		Cfg.DB_PATH = HomeDIR + AppDIR + Cfg.DB_NAME
 	}
+	if err := SaveCfg(); err != nil {
+		return err
+	}
 	if err = initDb(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func SaveCfg() error {
+	filepath := HomeDIR + AppDIR + ".env"
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var content string = ""
+	content += "GEMINI_API_KEY=" + Cfg.GEMINI_API_KEY + "\n"
+	content += "GEMINI_MODEL=" + Cfg.GEMINI_MODEL + "\n"
+	content += "MODE=" + Cfg.MODE + "\n"
+
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -129,7 +159,7 @@ func getApiKey() error {
 		input := ""
 		fmt.Scanln(&input)
 		Cfg.GEMINI_API_KEY = input
-		if err := saveApiKey(Cfg.GEMINI_API_KEY); err != nil {
+		if err := SaveCfg(); err != nil {
 			return err
 		}
 	}
@@ -137,16 +167,4 @@ func getApiKey() error {
 		return fmt.Errorf("GEMINI_API_KEY is not set")
 	}
 	return nil
-}
-
-func saveApiKey(key string) error {
-	file := HomeDIR + AppDIR + ".env"
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString("GEMINI_API_KEY=" + key + "\n")
-	return err
-
 }

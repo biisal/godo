@@ -96,6 +96,13 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 			ChatViewport: viewport.Model{},
 		},
 	}
+
+	initialMode := teaModel.Choices[teaModel.SelectedIndex]
+	if (initialMode == TodoMode && config.Cfg.MODE == "agent") ||
+		(initialMode == AgentMode && config.Cfg.MODE == "todo") {
+		teaModel.ToggleMode()
+	}
+
 	teaModel.RefreshList()
 	return &teaModel
 }

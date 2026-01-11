@@ -27,11 +27,7 @@ func SetUpDefalutKeys(key string, m *TeaModel) {
 	case "ctrl+b":
 		m.IsShowHelp = !m.IsShowHelp
 	case "ctrl+a":
-		if len(m.Choices) > m.SelectedIndex+1 {
-			m.SelectedIndex++
-		} else {
-			m.SelectedIndex = 0
-		}
+		m.ToggleMode()
 	case "ctrl+left", "ctrl+h":
 		maxChoice := len(m.TodoModel.Choices)
 		if m.TodoModel.SelectedIndex == 0 && maxChoice > 0 {
@@ -250,6 +246,23 @@ func (m *TeaModel) RefreshList() {
 	m.TodoModel.ListModel.List.SetSize(innerWidth, innerHeight)
 	m.TodoModel.ListModel.List.Title = "Todos "
 	m.TodoModel.ListModel.List.SetShowStatusBar(false)
+}
+
+func (m *TeaModel) ToggleMode() {
+	if len(m.Choices) > m.SelectedIndex+1 {
+		m.SelectedIndex++
+	} else {
+		m.SelectedIndex = 0
+	}
+	switch m.Choices[m.SelectedIndex].Value {
+	case TodoMode.Value: {
+		config.Cfg.MODE = "todo"
+	}
+	case AgentMode.Value: {
+		config.Cfg.MODE = "agent"
+	}
+	}
+	config.SaveCfg()
 }
 
 type clearErrorMsg struct{}
