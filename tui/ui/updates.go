@@ -3,14 +3,15 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	// "time"
 
+	"github.com/biisal/godo/bus"
 	"github.com/biisal/godo/config"
-	agentAction "github.com/biisal/godo/tui/actions/agent"
 	todoAction "github.com/biisal/godo/tui/actions/todo"
 	"github.com/biisal/godo/tui/models/todo"
 	"github.com/biisal/godo/tui/ui/styles"
@@ -114,7 +115,7 @@ func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (te
 			todoAction.ToggleDone(id)
 			item, err := todoAction.GetTodoById(id)
 			if err != nil {
-				m.FLogger.Info("ERROR GETTING ITEM WITH id ", id, " : ", err)
+				slog.Info("error toggling done", "id", id, "err", err)
 				return m, nil
 			}
 			m.TodoModel.ListModel.List.SetItem(m.TodoModel.ListModel.List.Index(), *item)
@@ -178,7 +179,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if promtInput == "/clear" {
-				if err := agentAction.TruncateChats(); err != nil {
+				if err := m.AgentBot.TruncateChats(); err != nil {
 					return m, m.ShowError(err)
 				}
 				m.ChatContent.Reset()
@@ -186,9 +187,9 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			config.StreamResponse <- config.StreamMsg{IsUser: true, Text: promtInput}
+			bus.EmitUser(promtInput)
 			return m, tea.Cmd(func() tea.Msg {
-				_, refresh, err := agentAction.AgentResponse(promtInput, m.FLogger)
+				_, refresh, err := m.AgentBot.AgentResponse(promtInput)
 				return agentResponseMsg{
 					refresh: refresh,
 					err:     err,
@@ -214,9 +215,9 @@ func (m *TeaModel) UpdateDescriptionContent() {
 	var LabelStyle = lipgloss.NewStyle().Background(m.Theme.TitleBackround()).Padding(0, 1).Foreground(lipgloss.Color("#000000")).Bold(true)
 	var rightContent string
 	if selectedItem := m.TodoModel.ListModel.List.SelectedItem(); selectedItem != nil {
-		m.FLogger.Info("SELECTED ITEM", selectedItem)
+		slog.Debug("selected item in description view", "item", selectedItem)
 		if i, ok := selectedItem.(todo.Todo); ok {
-			m.FLogger.Info("MATCHED", i)
+			slog.Debug("matched todo item", "id", i.ID)
 			statusText := "Not Compelted"
 			if i.Done {
 				statusText = "Compelted"
@@ -224,7 +225,7 @@ func (m *TeaModel) UpdateDescriptionContent() {
 			rightContent = fmt.Sprintf("%s : %s\n\n%s : %s ", LabelStyle.Render("Status"), statusText, LabelStyle.Render("Description"), i.Description())
 		}
 	}
-	m.FLogger.Info("RIGHT CONTENT IS : ", rightContent)
+	slog.Debug("right content built", "length", len(rightContent))
 	m.TodoModel.ListModel.DescViewport.Height = m.Height * 50 / 100
 	m.TodoModel.ListModel.DescViewport.SetContent(rightContent)
 }
@@ -241,7 +242,7 @@ func (m *TeaModel) RefreshList() {
 	}
 	innerWidth := m.Width * 60 / 100
 	innerHeight := m.Height * 80 / 100
-	m.FLogger.Info("THE WIDTH IS :", innerWidth)
+	slog.Debug("list refresh", "width", innerWidth)
 	m.TodoModel.ListModel.List = list.New(items, todo.CustomDelegate{Width: innerWidth - 2, Theme: styles.Theme{}}, 0, 0)
 	m.TodoModel.ListModel.List.SetSize(innerWidth, innerHeight)
 	m.TodoModel.ListModel.List.Title = "Todos "
@@ -255,12 +256,14 @@ func (m *TeaModel) ToggleMode() {
 		m.SelectedIndex = 0
 	}
 	switch m.Choices[m.SelectedIndex].Value {
-	case TodoMode.Value: {
-		config.Cfg.MODE = "todo"
-	}
-	case AgentMode.Value: {
-		config.Cfg.MODE = "agent"
-	}
+	case TodoMode.Value:
+		{
+			config.Cfg.MODE = "todo"
+		}
+	case AgentMode.Value:
+		{
+			config.Cfg.MODE = "agent"
+		}
 	}
 	config.SaveCfg()
 }

@@ -1,9 +1,9 @@
 package ui
 
 import (
+	"log/slog"
 	"strings"
 
-	"github.com/biisal/godo/tui/actions/agent"
 	"github.com/biisal/godo/tui/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
@@ -11,15 +11,12 @@ import (
 
 func RenderListView(m *TeaModel, maxHeight int) string {
 	leftWidth := m.Width * 60 / 100
-	left := lipgloss.NewStyle().Height(maxHeight).Padding(1).Width(leftWidth).Render(m.TodoModel.ListModel.List.View())
+	left := styles.TodoListStyle.Height(maxHeight).Width(leftWidth).Render(m.TodoModel.ListModel.List.View())
 
 	m.UpdateDescriptionContent()
-	right := lipgloss.NewStyle().Width(m.Width-leftWidth-1).Border(lipgloss.RoundedBorder()).
+	right := styles.TodoDescViewportStyle.Width(m.Width - leftWidth - 1).
 		BorderForeground(m.Theme.GetBorderColor()).
 		Height(maxHeight).
-		BorderLeft(true).BorderBottom(false).
-		Padding(1, 1, 0, 1).
-		BorderRight(false).BorderTop(false).
 		Render(m.TodoModel.ListModel.DescViewport.View())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
@@ -32,22 +29,15 @@ func TodoView(m *TeaModel, maxHeight int) string {
 		titleInput := m.TodoModel.AddModel.TitleInput
 		descInput := m.TodoModel.AddModel.DescInput
 		titleInput.Width = m.Width
-		topPart := lipgloss.NewStyle().Align(lipgloss.Center).Width(m.Width).Render("Add Todo")
+		topPart := styles.CenteredTitleStyle.Width(m.Width).Render("Add Todo")
 		topHight := lipgloss.Height(topPart)
-		inputView := styles.ChatInputStyle.
-			AlignHorizontal(lipgloss.Left).
+		inputView := styles.TodoInputStyle.
 			Width(m.Width).
-			Height(5).
-			BorderTop(true).
-			Border(lipgloss.NormalBorder()).
-			BorderBottom(true).
-			BorderRight(false).
-			BorderLeft(false).
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 		restHeight := maxHeight - topHight - inputHeight
 
-		descView := lipgloss.NewStyle().Width(m.Width).Height(restHeight).PaddingBottom(1)
+		descView := styles.TodoDescStyle.Width(m.Width).Height(restHeight)
 		descX, descY := descView.GetFrameSize()
 		descInput.SetHeight(restHeight - descY)
 		descInput.SetWidth(m.Width - descX)
@@ -61,27 +51,15 @@ func TodoView(m *TeaModel, maxHeight int) string {
 		idInput := m.TodoModel.EditModel.IdInput
 		titleInput.Width = m.Width
 		idInput.Width = m.Width
-		topPart := lipgloss.NewStyle().Align(lipgloss.Center).Width(m.Width).Render("Edit Todo : " + m.TodoModel.EditModel.IdInput.Value())
+		topPart := styles.CenteredTitleStyle.Width(m.Width).Render("Edit Todo : " + m.TodoModel.EditModel.IdInput.Value())
 		topHight := lipgloss.Height(topPart)
-		inputView := styles.ChatInputStyle.
-			AlignHorizontal(lipgloss.Left).
+		inputView := styles.TodoInputStyle.
 			Width(m.Width).
-			Height(5).
-			BorderTop(true).
-			Border(lipgloss.NormalBorder()).
-			BorderBottom(true).
-			BorderRight(false).
-			BorderLeft(false).
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 
-		idInputView := styles.ChatInputStyle.
+		idInputView := styles.TodoIdInputStyle.
 			Width(m.Width).
-			Height(1).
-			BorderTop(true).
-			BorderBottom(false).
-			BorderRight(false).
-			BorderLeft(false).
 			Render(idInput.View())
 		idInputHeight := lipgloss.Height(idInputView)
 		descHeight := maxHeight - topHight - inputHeight - idInputHeight
@@ -95,10 +73,9 @@ func TodoView(m *TeaModel, maxHeight int) string {
 }
 
 func AgentView(m *TeaModel, maxHeight int) string {
-	// historyLen := len(agentaction.History)
 
 	outerChatIViewHeight := maxHeight * 80 / 100
-	chatstyle := lipgloss.NewStyle().PaddingLeft(3).PaddingRight(2).PaddingBottom(1).Width(m.Width).Foreground(m.Theme.GetAgentContentStyle().GetForeground())
+	chatstyle := styles.AgentChatViewStyle.Width(m.Width).Foreground(m.Theme.GetAgentContentStyle().GetForeground())
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
@@ -117,27 +94,25 @@ func AgentView(m *TeaModel, maxHeight int) string {
 		chatView,
 	)
 
-	middleLeft := m.Theme.GetInstructionStyle().Render("Quit: Esc / Ctrl+C")
+	statusText := "Quit: Esc / Ctrl+C"
+	if m.AgentModel.StatusText != "" {
+		statusText = m.AgentModel.StatusText
+	}
+	middleLeft := m.Theme.GetInstructionStyle().Render(statusText)
 	middleRight := m.Theme.GetInstructionStyle().Render("Scroll: PageUp / PageDown")
 	middle := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		lipgloss.NewStyle().Width(m.Width/2).Render(middleLeft),
-		lipgloss.NewStyle().Width(m.Width/2).AlignHorizontal(lipgloss.Right).Render(middleRight),
+		styles.HalfWidthLeftStyle.Width(m.Width/2).Render(middleLeft),
+		styles.HalfWidthRightStyle.Width(m.Width/2).Render(middleRight),
 	)
 
 	middleHeight := lipgloss.Height(middle)
 	topHeight := lipgloss.Height(topPart)
 
 	inputHeight := maxHeight - topHeight - middleHeight
-	inputView := styles.ChatInputStyle.
-		AlignHorizontal(lipgloss.Left).
+	inputView := styles.AgentPromptStyle.
 		Width(m.Width).
 		Height(inputHeight - 1).
-		BorderTop(true).
-		Border(lipgloss.NormalBorder()).
-		BorderBottom(false).
-		BorderRight(false).
-		BorderLeft(false).
 		Render(m.AgentModel.PromptInput.View())
 
 	bottomPart := lipgloss.Place(
@@ -153,7 +128,7 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	totalHeight := lipgloss.Height(result)
 	if totalHeight > maxHeight {
 		overflow := totalHeight - maxHeight
-		m.FLogger.FWarn("WARNING: Content exceeds screen height by %d pixels", overflow)
+		slog.Warn("content exceeds screen height", "overflow", overflow)
 	}
 	return result
 }
@@ -273,22 +248,41 @@ func (m *TeaModel) BuildAgentTextUI(text string) {
 
 	switch text {
 	case "START":
+		m.AgentModel.CurrentReasoning.Reset()
 	case "DONE":
 		m.ChatContent.WriteString("\n")
 	default:
+		// Add a newline spacer if we just finished thinking and are transitioning to actual text
+		if m.AgentModel.CurrentReasoning.Len() > 0 {
+			m.ChatContent.WriteString("\n\n")
+			m.AgentModel.CurrentReasoning.Reset()
+		}
+
 		text = strings.ReplaceAll(text, "**", "")
 		m.ChatContent.WriteString(text)
 	}
 }
 
+func (m *TeaModel) BuildThinkingTextUI(text string) {
+	defer m.AgentModel.ChatViewport.GotoBottom()
+	// Accumulate reasoning
+	m.AgentModel.CurrentReasoning.WriteString(text)
+
+	// Stream live to the screen as faded text
+	m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(text))
+}
+
 func (m *TeaModel) RenderChatContentFromHistory() {
 	m.ChatContent.Reset()
-	for _, msg := range agent.History {
-		text := msg.Parts[0].Text
+	for _, msg := range m.AgentBot.History {
+		text := msg.Content
 		switch msg.Role {
 		case "user":
 			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(text))
 		default:
+			if msg.Reasoning != "" {
+				m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(msg.Reasoning) + "\n\n")
+			}
 			m.ChatContent.WriteString(text + "\n")
 		}
 	}

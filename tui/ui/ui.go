@@ -3,9 +3,10 @@ package ui
 import (
 	"strings"
 
+	"github.com/biisal/godo/bus"
 	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/logger"
-	"github.com/biisal/godo/tui/models/agent"
+	"github.com/biisal/godo/tui/actions/agent"
+	agentModel "github.com/biisal/godo/tui/models/agent"
 	"github.com/biisal/godo/tui/models/todo"
 
 	"github.com/biisal/godo/tui/ui/styles"
@@ -35,14 +36,14 @@ type TeaModel struct {
 	Choices       []todo.Mode
 	SelectedIndex int
 	TodoModel     todo.TodoModel
-	AgentModel    agent.AgentModel
+	AgentModel    agentModel.AgentModel
 	Width         int
 	Height        int
 	Error         error
 	Theme         styles.Theme
 	BgStyle       lipgloss.Style
-	FLogger       *logger.Logger
 	ChatContent   strings.Builder
+	AgentBot      *agent.Bot
 }
 
 //	func waitForActivity(ev chan string) tea.Cmd {
@@ -68,12 +69,12 @@ func getTitleInput(focus bool, s ...string) textinput.Model {
 	}
 	return input
 }
-func InitialModel(fLogger *logger.Logger) *TeaModel {
+func InitialModel(agentBot *agent.Bot) *TeaModel {
 
 	promptInput := textinput.New()
 	promptInput.Focus()
 	teaModel := TeaModel{
-		FLogger:       fLogger,
+		AgentBot:      agentBot,
 		SelectedIndex: 1,
 		Choices:       []todo.Mode{TodoMode, AgentMode},
 		TodoModel: todo.TodoModel{
@@ -91,7 +92,7 @@ func InitialModel(fLogger *logger.Logger) *TeaModel {
 			SelectedIndex: 0,
 			Choices:       []todo.Mode{TodoListMode, TodoAddMode, TodoEditMode},
 		},
-		AgentModel: agent.AgentModel{
+		AgentModel: agentModel.AgentModel{
 			PromptInput:  promptInput,
 			ChatViewport: viewport.Model{},
 		},
@@ -116,6 +117,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch msg := msg.(type) {
 	case agentResponseMsg:
+		m.AgentModel.StatusText = ""
 		if msg.refresh {
 			m.RefreshList()
 		}
@@ -127,16 +129,22 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.AgentModel.PromptInput.Reset()
 		}
 		return m, nil
-	case config.StreamMsg:
+	case bus.StreamMsg:
 		if msg.IsUser {
 			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(msg.Text) + "\n")
 			return m, nil
 		}
-		m.FLogger.Debug("Received to Update message: ", msg.Text)
-		m.BuildAgentTextUI(msg.Text)
+		if msg.Type == "status" {
+			m.AgentModel.StatusText = msg.Text
+			return m, nil
+		}
+		if msg.Type == "thinking" {
+			m.BuildThinkingTextUI(msg.Text)
+		} else {
+			m.BuildAgentTextUI(msg.Text)
+		}
 		return m, nil
 	case clearErrorMsg:
-		m.FLogger.Debug("Clearing Error")
 		m.Error = nil
 		return m, nil
 

@@ -14,19 +14,14 @@ import (
 )
 
 type Config struct {
-	GEMINI_MODEL   string `env:"GEMINI_MODEL"`
-	GEMINI_API_KEY string `env:"GEMINI_API_KEY"`
-	ENVIRONMENT    string `env:"ENVIRONMENT"`
-	MODE           string `env:"MODE"`
-	DB_PATH        string
-	DB_NAME        string
-	DB             *sql.DB
-}
-
-type StreamMsg struct {
-	Text   string
-	IsUser bool
-	Type   string
+	OPENAI_API_KEY  string `env:"OPENAI_API_KEY"`
+	OPENAI_MODEL    string `env:"OPENAI_MODEL"`
+	OPENAI_BASE_URL string `env:"OPENAI_BASE_URL"`
+	ENVIRONMENT     string `env:"ENVIRONMENT"`
+	MODE            string `env:"MODE"`
+	DB_PATH         string
+	DB_NAME         string
+	DB              *sql.DB
 }
 
 var (
@@ -37,7 +32,6 @@ var (
 	Cfg            Config
 	StartTime      time.Time
 	Ping           = make(chan string, 250)
-	StreamResponse = make(chan StreamMsg, 1)
 	HomeDIR        string
 	AppDIR         = "/.local/share/godo/"
 	AppName        = "logs"
@@ -66,7 +60,7 @@ func MustLoad() error {
 		return err
 	}
 
-	loadEnv([]string{HomeDIR + AppDIR + ".env", "./.env"})
+	loadEnv([]string{"./.env", HomeDIR + AppDIR + ".env"})
 
 	if err := cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
@@ -75,9 +69,12 @@ func MustLoad() error {
 	if err = getApiKey(); err != nil {
 		return err
 	}
-	if Cfg.GEMINI_MODEL == "" {
-		Cfg.GEMINI_MODEL = "gemini-2.5-flash"
-		fmt.Println("GEMINI_MODEL is not set, using default value:", Cfg.GEMINI_MODEL)
+	if Cfg.OPENAI_MODEL == "" {
+		Cfg.OPENAI_MODEL = "gpt-4o-mini"
+		fmt.Println("OPENAI_MODEL is not set, using default value:", Cfg.OPENAI_MODEL)
+	}
+	if Cfg.OPENAI_BASE_URL == "" {
+		Cfg.OPENAI_BASE_URL = "https://api.openai.com/v1"
 	}
 	if Cfg.ENVIRONMENT == "" {
 		Cfg.ENVIRONMENT = EnvProduction
@@ -114,8 +111,9 @@ func SaveCfg() error {
 	defer f.Close()
 
 	var content string = ""
-	content += "GEMINI_API_KEY=" + Cfg.GEMINI_API_KEY + "\n"
-	content += "GEMINI_MODEL=" + Cfg.GEMINI_MODEL + "\n"
+	content += "OPENAI_API_KEY=" + Cfg.OPENAI_API_KEY + "\n"
+	content += "OPENAI_MODEL=" + Cfg.OPENAI_MODEL + "\n"
+	content += "OPENAI_BASE_URL=" + Cfg.OPENAI_BASE_URL + "\n"
 	content += "MODE=" + Cfg.MODE + "\n"
 
 	_, err = f.WriteString(content)
@@ -153,18 +151,18 @@ func initDb() error {
 }
 
 func getApiKey() error {
-	Cfg.GEMINI_API_KEY = os.Getenv("GEMINI_API_KEY")
-	if Cfg.GEMINI_API_KEY == "" {
-		fmt.Println("Enter your gemini api key")
+	Cfg.OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
+	if Cfg.OPENAI_API_KEY == "" {
+		fmt.Println("Enter your OpenAI API key (or compatible API key):")
 		input := ""
 		fmt.Scanln(&input)
-		Cfg.GEMINI_API_KEY = input
+		Cfg.OPENAI_API_KEY = input
 		if err := SaveCfg(); err != nil {
 			return err
 		}
 	}
-	if Cfg.GEMINI_API_KEY == "" {
-		return fmt.Errorf("GEMINI_API_KEY is not set")
+	if Cfg.OPENAI_API_KEY == "" {
+		return fmt.Errorf("OPENAI_API_KEY is not set")
 	}
 	return nil
 }

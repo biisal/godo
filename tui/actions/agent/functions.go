@@ -1,26 +1,73 @@
 package agent
 
-import "github.com/biisal/godo/tui/models/agent"
+import (
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/shared/constant"
+)
 
-func FormattedFunctions() []agent.Tool {
-	return []agent.Tool{
+const (
+	PerformSqlFunc      = "PerformSql"
+	RunShellCommandFunc = "RunShellCommand"
+	ReadSkillFunc       = "ReadSkill"
+)
+
+func FormattedFunctions() []openai.ChatCompletionToolParam {
+	return []openai.ChatCompletionToolParam{
 		{
-			FunctionDeclarations: []agent.FunctionDeclaration{
-				getFuncFormatted(
-					PerformSqlFunc,
-					`Execute SQL queries on the SQLite database for the 'todos' table. 
-The table has columns: Id (INTEGER PRIMARY KEY), Title (TEXT), Description (TEXT), Done (BOOLEAN).
-Use SELECT queries to fetch data, INSERT to add todos, UPDATE to modify them, 
-and DELETE to remove them. Always write valid SQLite queries. 
-Only interact with the 'todos' table.`,
-					map[string]agent.Property{
-						"query": {
-							Type:        "string",
-							Description: "The sqlite3 query to execute",
+			Type: constant.Function("function"),
+			Function: shared.FunctionDefinitionParam{
+				Name: PerformSqlFunc,
+				Description: openai.String(`Execute any SQLite query on the 'todos' database.
+CRITICAL: You MUST use this tool for ALL todo-related operations (listing, adding, completing, editing, deleting, finding).
+DO NOT use the RunShellCommand tool for todo management.
+Table schema: todos (Id INTEGER PRIMARY KEY, Title TEXT, Description TEXT, Done BOOLEAN)
+Always write valid SQLite syntax and return the raw output.`),
+				Parameters: shared.FunctionParameters{
+					"type": "object",
+					"properties": map[string]any{
+						"query": map[string]any{
+							"type":        "string",
+							"description": "The SQLite query to execute (SELECT, INSERT, UPDATE, DELETE, etc.)",
 						},
 					},
-					[]string{"query"},
-				),
+					"required": []string{"query"},
+				},
+			},
+		},
+		{
+			Type: constant.Function("function"),
+			Function: shared.FunctionDefinitionParam{
+				Name:        RunShellCommandFunc,
+				Description: openai.String(`Execute a shell command and return its output. Use with caution.`),
+				Parameters: shared.FunctionParameters{
+					"type": "object",
+					"properties": map[string]any{
+						"command": map[string]any{
+							"type":        "string",
+							"description": "The shell command to execute.",
+						},
+					},
+					"required": []string{"command"},
+				},
+			},
+		},
+		{
+			Type: constant.Function("function"),
+			Function: shared.FunctionDefinitionParam{
+				Name: ReadSkillFunc,
+				Description: openai.String(`Read the instructions for a specific skill from its markdown file.
+Provide the name of the skill (without the .md extension). Use this when you need specific instructions provided in the system prompt's skills list.`),
+				Parameters: shared.FunctionParameters{
+					"type": "object",
+					"properties": map[string]any{
+						"skillName": map[string]any{
+							"type":        "string",
+							"description": "The name of the skill to read.",
+						},
+					},
+					"required": []string{"skillName"},
+				},
 			},
 		},
 	}

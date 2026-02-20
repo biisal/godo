@@ -41,6 +41,58 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#89b4fa")).
 			Padding(0, 1)
+
+	AgentChatViewStyle = lipgloss.NewStyle().
+				PaddingLeft(3).
+				PaddingRight(2).
+				PaddingBottom(1)
+
+	AgentPromptStyle = ChatInputStyle.
+				BorderBottom(false).
+				BorderRight(false).
+				BorderLeft(false)
+
+	ThinkingTokenStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#555555")).
+				Italic(true)
+
+	HalfWidthLeftStyle = lipgloss.NewStyle().
+				AlignHorizontal(lipgloss.Left)
+
+	HalfWidthRightStyle = lipgloss.NewStyle().
+				AlignHorizontal(lipgloss.Right)
+
+	CenteredTitleStyle = lipgloss.NewStyle().
+				Align(lipgloss.Center)
+
+	TodoInputStyle = ChatInputStyle.
+			Height(5).
+			BorderTop(true).
+			Border(lipgloss.NormalBorder()).
+			BorderBottom(true).
+			BorderRight(false).
+			BorderLeft(false)
+
+	TodoIdInputStyle = ChatInputStyle.
+				Height(1).
+				BorderTop(true).
+				BorderBottom(false).
+				BorderRight(false).
+				BorderLeft(false)
+
+	TodoDescStyle = lipgloss.NewStyle().
+			PaddingBottom(1)
+
+	TodoListStyle = lipgloss.NewStyle().
+			Padding(1)
+
+	TodoDescViewportStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderLeft(true).
+				BorderBottom(false).
+				Padding(1, 1, 0, 1).
+				BorderRight(false).
+				BorderTop(false)
 )
 
 type ListTheme struct {

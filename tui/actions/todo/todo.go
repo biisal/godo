@@ -1,11 +1,12 @@
 package todo
 
 import (
+	"database/sql"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/biisal/godo/config"
 	"github.com/biisal/godo/tui/models/todo"
@@ -128,120 +129,53 @@ func GetTodoById(id int) (*todo.Todo, error) {
 	return todo, nil
 }
 
-type QueryResult struct {
-	Status        string           `json:"status"`
-	QueryType     string           `json:"query_type"`
-	Data          []map[string]any `json:"data,omitempty"`
-	RowsAffected  int64            `json:"rows_affected,omitempty"`
-	RowCount      int              `json:"row_count,omitempty"`
-	ExecutionTime string           `json:"execution_time"`
-	Columns       []string         `json:"columns,omitempty"`
-	Error         *QueryError      `json:"error,omitempty"`
-}
-
-type QueryError struct {
-	Message    string `json:"message"`
-	Suggestion string `json:"suggestion,omitempty"`
-}
-
-func PerformSqlQuery(sqlStmt string) (*QueryResult, error) {
-	startTime := time.Now()
-
-	result := &QueryResult{
-		Status:        "success",
-		QueryType:     getQueryType(sqlStmt),
-		ExecutionTime: "",
-	}
-
-	if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(sqlStmt)), "SELECT") {
-		return handleSelectQuery(sqlStmt, result, startTime)
-	} else {
-		return handleModificationQuery(sqlStmt, result, startTime)
-	}
-}
-
-func handleSelectQuery(sqlStmt string, result *QueryResult, startTime time.Time) (*QueryResult, error) {
+func PerformSqlQuery(sqlStmt string) (string, error) {
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
-		result.Status = "error"
-		result.Error = &QueryError{
-			Message:    err.Error(),
-			Suggestion: getSuggestionForError(err.Error()),
-		}
-		result.ExecutionTime = time.Since(startTime).String()
-		return result, nil // Return result with error info, not Go error
+		return "", err
 	}
 	defer rows.Close()
 
-	// Get column information
-	columns, err := rows.Columns()
+	cols, err := rows.Columns()
 	if err != nil {
-		result.Status = "error"
-		result.Error = &QueryError{Message: fmt.Sprintf("Failed to get columns: %v", err)}
-		result.ExecutionTime = time.Since(startTime).String()
-		return result, nil
-	}
-	result.Columns = columns
-
-	// Prepare slice to hold column values
-	values := make([]any, len(columns))
-	valuePtrs := make([]any, len(columns))
-	for i := range columns {
-		valuePtrs[i] = &values[i]
+		return "", err
 	}
 
-	// Read all rows
-	var data []map[string]any
+	// use sql.RawBytes — zero-copy, reuses the driver buffer
+	ptrs := make([]any, len(cols))
+	rawBytes := make([]sql.RawBytes, len(cols))
+	for i := range rawBytes {
+		ptrs[i] = &rawBytes[i]
+	}
+
+	var results []map[string]any
+
 	for rows.Next() {
-		if err := rows.Scan(valuePtrs...); err != nil {
-			result.Status = "error"
-			result.Error = &QueryError{
-				Message:    fmt.Sprintf("Failed to scan row: %v", err),
-				Suggestion: "Check if query columns match expected data types",
-			}
-			result.ExecutionTime = time.Since(startTime).String()
-			return result, nil
+		if err := rows.Scan(ptrs...); err != nil {
+			return "", err
 		}
 
-		// Convert row to map
-		row := make(map[string]any)
-		for i, col := range columns {
-			val := values[i]
-			// Convert []byte to string for better JSON serialization
-			if b, ok := val.([]byte); ok {
-				row[col] = string(b)
+		row := make(map[string]any, len(cols))
+		for i, col := range cols {
+			if rawBytes[i] == nil {
+				row[col] = nil
 			} else {
-				row[col] = val
+				row[col] = string(rawBytes[i]) // copy before next iteration
 			}
 		}
-		data = append(data, row)
+		results = append(results, row)
 	}
 
-	result.Data = data
-	result.RowCount = len(data)
-	result.ExecutionTime = time.Since(startTime).String()
-	return result, nil
-}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
 
-func handleModificationQuery(sqlStmt string, result *QueryResult, startTime time.Time) (*QueryResult, error) {
-	res, err := config.Cfg.DB.Exec(sqlStmt)
+	out, err := json.MarshalIndent(results, "", "  ")
 	if err != nil {
-		result.Status = "error"
-		result.Error = &QueryError{
-			Message:    err.Error(),
-			Suggestion: getSuggestionForError(err.Error()),
-		}
-		result.ExecutionTime = time.Since(startTime).String()
-		return result, nil
+		return "", err
 	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err == nil {
-		result.RowsAffected = rowsAffected
-	}
-
-	result.ExecutionTime = time.Since(startTime).String()
-	return result, nil
+	slog.Info("\n\nQuery Result", "query", sqlStmt, "result", string(out))
+	return string(out), nil
 }
 
 func getQueryType(sqlStmt string) string {

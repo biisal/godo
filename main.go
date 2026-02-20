@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
+	"github.com/biisal/godo/bus"
 	"github.com/biisal/godo/config"
 	"github.com/biisal/godo/logger"
 	"github.com/biisal/godo/tui/actions/agent"
@@ -12,36 +14,48 @@ import (
 )
 
 func main() {
-	Flogger := logger.NewLogger("logs.log", "[GODO-APP]", logger.Error)
-	Flogger.Info("Starting GODO-AGENT")
-	defer Flogger.Close()
+	closeLog, err := logger.Init("logs.log", slog.LevelDebug)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open log file: %v\n", err)
+		os.Exit(1)
+	}
+	defer closeLog()
+
+	slog.Info("Starting GODO-AGENT")
+
 	if err := config.MustLoad(); err != nil {
-		Flogger.Error("Error loading config:", err)
-		fmt.Printf("Failed To Load Config %v: ", err)
+		slog.Error("Error loading config", "err", err)
+		fmt.Printf("Failed To Load Config: %v\n", err)
 		os.Exit(1)
 	}
 	defer config.Cfg.DB.Close()
-	m := ui.InitialModel(Flogger)
-	p := tea.NewProgram(m, tea.WithAltScreen())
 
-	history, err := agent.GetChatHistoryFromDB()
+	bot := agent.NewBot()
+
+	history, err := bot.GetChatHistoryFromDB()
 	if err != nil {
-		m.FLogger.Error("Error getting chat history from DB: ", err)
+		slog.Error("Error getting chat history from DB", "err", err)
 		fmt.Println("Exiting")
 		os.Exit(1)
 	}
-	agent.History = *history
-	tea.ClearScreen()
+	bot.History = *history
+
+	m := ui.InitialModel(bot)
+	p := tea.NewProgram(m, tea.WithAltScreen())
+
+	if err := tea.ClearScreen(); err != nil {
+		slog.Error("Error clearing screen", "err", err)
+	}
+
 	go func() {
-		for msg := range config.StreamResponse {
-			m.FLogger.Info("Got message: ", msg)
-			p.Send(config.StreamMsg{Text: msg.Text, IsUser: msg.IsUser})
-			m.FLogger.Info("Send message: ", msg)
+		for msg := range bus.StreamResponse {
+			p.Send(bus.StreamMsg{Text: msg.Text, IsUser: msg.IsUser, Type: msg.Type})
 		}
 	}()
+
 	if _, err := p.Run(); err != nil {
-		m.FLogger.Error("Error running program:", err)
-		fmt.Printf("Alas, there's been an error: %v", err)
+		slog.Error("Error running program", "err", err)
+		fmt.Printf("Alas, there's been an error: %v\n", err)
 	}
 
 	fmt.Println("Goodbye!")

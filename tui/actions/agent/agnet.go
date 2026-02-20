@@ -1,326 +1,311 @@
 package agent
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
-	"regexp"
+	"log/slog"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/biisal/godo/bus"
 	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/logger"
+	"github.com/biisal/godo/identity"
 	"github.com/biisal/godo/tui/actions/todo"
 	"github.com/biisal/godo/tui/models/agent"
-	"github.com/mitchellh/mapstructure"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 )
 
-var (
-	PerformSqlFunc   = "PerformSql"
-	AddTodoFunc      = "AddTodo"
-	GetTodosInfoFunc = "GetTodosInfo"
-	GetTodosFunc     = "GetTodos"
-	GetTodoBYIDFunc  = "GetTodoByID"
-	DeleteTodoFunc   = "DeleteTodo"
-	ModifyTodoFunc   = "ModifyTodo"
-	ToggleDoneFunc   = "ToggleDone"
-	History          = make([]agent.Content, 0)
-)
+type Bot struct {
+	History      []agent.Message
+	oaiMessages  []openai.ChatCompletionMessageParamUnion
+	client       *openai.Client
+	tools        []openai.ChatCompletionToolParam
+	systemPrompt string
+}
 
-func GetChatHistoryFromDB() (*[]agent.Content, error) {
+func NewBot() *Bot {
+	builder := identity.NewContextBuilder()
+	c := openai.NewClient(
+		option.WithAPIKey(config.Cfg.OPENAI_API_KEY),
+		option.WithBaseURL(config.Cfg.OPENAI_BASE_URL),
+	)
+	return &Bot{
+		tools:        FormattedFunctions(),
+		systemPrompt: builder.BuildSystemPrompt(),
+		client:       &c,
+	}
+}
+
+func (b *Bot) GetChatHistoryFromDB() (*[]agent.Message, error) {
 	sqlStmt := "SELECT chat FROM chats"
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer rows.Close()
-	var history []agent.Content
+	var history []agent.Message
 	for rows.Next() {
 		var chatContent []byte
 		if err := rows.Scan(&chatContent); err != nil {
 			fmt.Println(err)
 		}
-		chat := agent.Content{}
-		if err := json.Unmarshal(chatContent, &chat); err != nil {
+		msg := agent.Message{}
+		if err := json.Unmarshal(chatContent, &msg); err != nil {
 			fmt.Println(err)
 		}
-		history = append(history, chat)
+		history = append(history, msg)
 	}
 	return &history, nil
+}
 
-}
-func AddChatToDB(content agent.Content) error {
+func (b *Bot) AddChatToDB(msg agent.Message) error {
 	sqlStmt := "INSERT INTO chats (chat) VALUES (?)"
-	contentJson, err := json.Marshal(content)
+	msgJson, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	_, err = config.Cfg.DB.Exec(sqlStmt, string(contentJson))
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err = config.Cfg.DB.Exec(sqlStmt, string(msgJson))
+	return err
 }
-func TruncateChats() error {
-	// sqlStmt := "TRUNCATE TABLE chats"
+
+func (b *Bot) TruncateChats() error {
 	sqlStmt := "DELETE FROM chats"
 	_, err := config.Cfg.DB.Exec(sqlStmt)
 	if err == nil {
-		History = nil
+		b.History = nil
+		b.oaiMessages = nil
 	}
 	return err
-
 }
-func getFuncFormatted(name, description string, properties map[string]agent.Property, required []string) agent.FunctionDeclaration {
-	return agent.FunctionDeclaration{
-		Name:        name,
-		Description: description,
-		Parameters: agent.Parameter{
-			Type:       "object",
-			Required:   required,
-			Properties: properties,
-		},
+
+func toOAIMessage(m agent.Message) openai.ChatCompletionMessageParamUnion {
+	switch m.Role {
+	case agent.UserRole:
+		return openai.UserMessage(m.Content)
+	case agent.AssistantRole:
+		if len(m.ToolCalls) > 0 {
+			calls := make([]openai.ChatCompletionMessageToolCallParam, 0, len(m.ToolCalls))
+			for _, tc := range m.ToolCalls {
+				calls = append(calls, openai.ChatCompletionMessageToolCallParam{
+					ID:   tc.ID,
+					Type: "function",
+					Function: openai.ChatCompletionMessageToolCallFunctionParam{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
+					},
+				})
+			}
+			asst := openai.ChatCompletionAssistantMessageParam{ToolCalls: calls}
+			return openai.ChatCompletionMessageParamUnion{OfAssistant: &asst}
+		}
+		return openai.AssistantMessage(m.Content)
+	case agent.ToolRole:
+		return openai.ToolMessage(m.Content, m.ToolCallID)
+	default:
+		return openai.UserMessage(m.Content)
 	}
 }
 
-// AI generated helper function
-func stripMarkdown(md string) string {
-	// 1. Remove links: [text](url) → keep "text"
-	re := regexp.MustCompile(`\[(.*?)\]\(.*?\)`)
-	text := re.ReplaceAllString(md, "$1")
-
-	// 2. Remove images: ![alt](url) → keep "alt"
-	re = regexp.MustCompile(`!\[(.*?)\]\(.*?\)`)
-	text = re.ReplaceAllString(text, "$1")
-
-	// 3. Remove bold/italic (**bold**, *italic*, ***both***)
-	re = regexp.MustCompile(`\*{1,3}([^\*]+)\*{1,3}`)
-	text = re.ReplaceAllString(text, "$1")
-
-	// 4. Remove inline code `code`
-	re = regexp.MustCompile("`([^`]+)`")
-	text = re.ReplaceAllString(text, "$1")
-
-	// 5. Remove headings (### Title → Title)
-	re = regexp.MustCompile(`(?m)^#{1,6}\s*`)
-	text = re.ReplaceAllString(text, "")
-
-	// 6. Remove list markers (-, *, 1.)
-	re = regexp.MustCompile(`(?m)^\s*[-*+]\s+`)
-	text = re.ReplaceAllString(text, "")
-	re = regexp.MustCompile(`(?m)^\s*\d+\.\s+`)
-	text = re.ReplaceAllString(text, "")
-
-	return text
+func (b *Bot) appendMessage(msg agent.Message) {
+	b.History = append(b.History, msg)
+	b.oaiMessages = append(b.oaiMessages, toOAIMessage(msg))
 }
 
-func agentAPICall(logger *logger.Logger, refresh ...bool) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+func (b *Bot) initOAIMessages() {
+	b.oaiMessages = make([]openai.ChatCompletionMessageParamUnion, 0, len(b.History)+1)
+	b.oaiMessages = append(b.oaiMessages, openai.SystemMessage(b.systemPrompt))
+	for _, m := range b.History {
+		b.oaiMessages = append(b.oaiMessages, toOAIMessage(m))
+	}
+}
+
+const maxToolSteps = 5
+
+func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
+	if delta.JSON.ExtraFields == nil {
+		return ""
+	}
+	f, ok := delta.JSON.ExtraFields["reasoning"]
+	if !ok {
+		return ""
+	}
+	var r string
+	json.Unmarshal([]byte(f.Raw()), &r)
+	return r
+}
+
+func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 	isRefresh := false
 	if len(refresh) > 0 {
 		isRefresh = refresh[0]
 	}
-	currentDateTime := time.Now().Format("2006-01-02 15:04:05")
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s", config.Cfg.GEMINI_MODEL, config.Cfg.GEMINI_API_KEY)
-	body := agent.AgentReq{
-		Contents: History,
-		Tools:    FormattedFunctions(),
-		SystemInstruction: &agent.Content{
-			Role: agent.SystemRole,
-			Parts: []agent.Part{
-				{
-					Text: `
-You are the AI assistant inside the GoDo CLI app.  
-You help with productivity, task management, coding, troubleshooting, writing, and learning.
 
-Abilities:
-- Manage and organize tasks
-- Break down projects into steps
-- Explain concepts and answer questions
-- Debug and solve technical problems
-- Summarize, write, and edit text
-- Suggest ways to boost efficiency
+	slog.Info("Running initOAIMessages", "time", time.Now())
+	b.initOAIMessages()
+	slog.Info("Finished initOAIMessages", "time", time.Now(), "time taken", time.Since(time.Now()))
 
-Style:
-- Be clear, concise, and practical
-- Keep context across inputs
-- Match tone: professional for work, casual for chat
+	for range maxToolSteps {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 
-You always have access to the current time: ` + currentDateTime,
-				},
-			},
-		},
-	}
-	bodyJson, err := json.Marshal(body)
-	if err != nil {
-		return isRefresh, err
-	}
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bodyJson))
-	req.Header.Set("Content-Type", "application/json")
+		stream := b.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+			Model:    config.Cfg.OPENAI_MODEL,
+			Messages: b.oaiMessages,
+			Tools:    b.tools,
+		}, option.WithJSONSet("think", true))
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return isRefresh, err
-	}
-	if resp.StatusCode != 200 {
-		var errMsg agent.AgentError
-		if err := json.NewDecoder(resp.Body).Decode(&errMsg); err != nil {
-			logger.FError("failed to decode error message: %s", err.Error())
-			return isRefresh, fmt.Errorf("failed to decode error message: %w", err)
-		}
-		if errMsg.Error.Message == "" {
-			return isRefresh, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-		}
-		return isRefresh, errors.New(errMsg.Error.Message)
-	}
-	defer resp.Body.Close()
-	var msgStruct agent.AgentRes
+		acc := openai.ChatCompletionAccumulator{}
+		bus.EmitStatus("Thinking...")
+		var reasoningBuilder strings.Builder
 
-	scanner := bufio.NewScanner(resp.Body)
-	buf := make([]byte, 1024*1024)
-	scanner.Buffer(buf, len(buf))
+		for stream.Next() {
+			chunk := stream.Current()
+			acc.AddChunk(chunk)
 
-	var fullMsg string
-	var hasFunctionCall bool
-
-	for scanner.Scan() {
-		data := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "data: "))
-		if data == "" || !strings.HasPrefix(data, "{") {
-			continue
-		}
-		if err := json.Unmarshal([]byte(data), &msgStruct); err != nil {
-			return isRefresh, fmt.Errorf("failed to unmarshal message: %w", err)
-		}
-
-		for _, candidate := range msgStruct.Candidates {
-			for _, part := range candidate.Content.Parts {
-				// Handle text content
-				if part.Text != "" {
-					fullMsg += part.Text
-					for word := range strings.SplitSeq(part.Text, " ") {
-						config.StreamResponse <- config.StreamMsg{Text: word + " "}
-						time.Sleep(20 * time.Millisecond)
-					}
-
+			for _, choice := range chunk.Choices {
+				if r := deltaReasoning(choice.Delta); r != "" {
+					reasoningBuilder.WriteString(r)
+					bus.EmitThinking(r)
 				}
-
-				// Handle function calls
-				if part.FunctionCall != nil {
-					hasFunctionCall = true
-					funcName := strings.TrimSpace(part.FunctionCall.Name)
-
-					if fullMsg != "" {
-						History = append(History, agent.Content{
-							Role: agent.ModelRole,
-							Parts: []agent.Part{
-								{
-									Text: fullMsg,
-								},
-							},
-						})
-						fullMsg = "" // Reset after adding
-						config.StreamResponse <- config.StreamMsg{Text: ""}
-					}
-
-					var result any
-					result, isRefresh, err = runFunction(funcName, *part.FunctionCall)
-					if err != nil {
-						result = err.Error()
-					}
-
-					History = append(History, agent.Content{
-						Role: agent.ModelRole,
-						Parts: []agent.Part{
-							{
-								FunctionCall: part.FunctionCall,
-							},
-						},
-					})
-
-					History = append(History, agent.Content{
-						Role: agent.FunctionRole,
-						Parts: []agent.Part{
-							{
-								FunctionResponse: &agent.FunctionResponse{
-									ID:       part.FunctionCall.ID,
-									Name:     funcName,
-									Response: map[string]any{"output": result},
-								},
-							},
-						},
-					})
-
-					return agentAPICall(logger, isRefresh)
+				if content := choice.Delta.Content; content != "" {
+					bus.EmitContent(content)
 				}
 			}
 		}
+		cancel()
+
+		if err := stream.Err(); err != nil {
+			return isRefresh, fmt.Errorf("stream error: %w", err)
+		}
+
+		if len(acc.Choices) == 0 {
+			return isRefresh, nil
+		}
+
+		choice := acc.Choices[0]
+		toolCalls := choice.Message.ToolCalls
+
+		if len(toolCalls) > 0 {
+			assistantMsg := agent.Message{
+				Role:      agent.AssistantRole,
+				ToolCalls: toolCalls,
+			}
+			if txt := strings.TrimSpace(choice.Message.Content); txt != "" {
+				assistantMsg.Content = txt
+				bus.Emit("")
+			}
+			assistantMsg.Reasoning = reasoningBuilder.String()
+			b.appendMessage(assistantMsg)
+
+			for _, tc := range toolCalls {
+				bus.EmitToolCall(tc.Function.Name)
+				// slog.Info("\n\nRunning tool----------------------------", "name", tc.Function.Name, "args", tc.Function.Arguments)
+				result, shouldRefresh, err := runFunction(tc.Function.Name, tc)
+				// slog.Info("\n\nTool result----------------------------", "result", result, "shouldRefresh", shouldRefresh, "err", err)
+				isRefresh = isRefresh || shouldRefresh
+				var resultStr string
+				if err != nil {
+					resultStr = err.Error()
+				} else {
+					b, _ := json.Marshal(result)
+					resultStr = string(b)
+				}
+
+				toolMsg := agent.Message{
+					Role:       agent.ToolRole,
+					ToolCallID: tc.ID,
+					Name:       tc.Function.Name,
+					Content:    resultStr,
+				}
+				b.appendMessage(toolMsg)
+			}
+			continue
+		}
+
+		finalText := choice.Message.Content
+		if finalText != "" || reasoningBuilder.Len() > 0 {
+			msg := agent.Message{
+				Role:      agent.AssistantRole,
+				Reasoning: reasoningBuilder.String(),
+				Content:   finalText,
+			}
+			b.appendMessage(msg)
+			b.AddChatToDB(msg)
+		}
+
+		return isRefresh, nil
 	}
 
-	// Add any remaining text content after processing all chunks
-	if fullMsg != "" && !hasFunctionCall {
-		History = append(History, agent.Content{
-			Role: agent.ModelRole,
-			Parts: []agent.Part{
-				{
-					Text: stripMarkdown(fullMsg),
-				},
-			},
-		})
-	}
-	// config.StreamResponse <- fullMsg
-	AddChatToDB(History[len(History)-1])
-	return isRefresh, nil
+	return isRefresh, fmt.Errorf("agent exceeded max tool steps (%d)", maxToolSteps)
 }
 
-func AgentResponse(prompt string, logger *logger.Logger) ([]agent.Content, bool, error) {
-	var refresh = false
-	var userInput = agent.Content{
-		Role: agent.UserRole,
-		Parts: []agent.Part{
-			{
-				Text: prompt,
-			},
-		},
+func (b *Bot) AgentResponse(prompt string) ([]agent.Message, bool, error) {
+	userMsg := agent.Message{
+		Role:    agent.UserRole,
+		Content: prompt,
 	}
+	b.History = append(b.History, userMsg)
+	b.AddChatToDB(userMsg)
 
-	History = append(History, userInput)
-	AddChatToDB(userInput)
-	var err error
-	config.StreamResponse <- config.StreamMsg{Text: "START"}
-	refresh, err = agentAPICall(logger)
+	bus.Emit("START")
+	refresh, err := b.agentAPICall()
 	if err != nil {
 		return nil, refresh, err
 	}
-	config.StreamResponse <- config.StreamMsg{Text: "DONE"}
-	return History, refresh, nil
+	bus.Emit("DONE")
+	return b.History, refresh, nil
 }
 
-func runFunction(funcName string, tool agent.FunctionCall) (any, bool, error) {
-	var result any
-	var err error
-	var refresh bool
-
+func runFunction(funcName string, tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
 	switch funcName {
 	case PerformSqlFunc:
 		var args struct {
 			Query string `json:"query"`
 		}
-		if err := mapstructure.Decode(tool.Args, &args); err != nil {
-			return "", refresh, fmt.Errorf("invalid JSON in tool call arguments: %w\nraw: %s", err, tool.Args)
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
 		}
-		result, err = todo.PerformSqlQuery(args.Query)
+		result, err := todo.PerformSqlQuery(args.Query)
 		if err != nil {
-			return "", refresh, err
+			return "", false, err
 		}
-		refresh = true
+		return result, true, nil
+
+	case RunShellCommandFunc:
+		var args struct {
+			Command string `json:"command"`
+		}
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
+		}
+		cmd := exec.Command("sh", "-c", args.Command)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return string(out) + "\nError: " + err.Error(), false, nil
+		}
+		slog.Debug("command output", "output", string(out))
+		return string(out), false, nil
+
+	case ReadSkillFunc:
+		var args struct {
+			SkillName string `json:"skillName"`
+		}
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
+		}
+		baseDir, _ := os.Getwd()
+		skillPath := filepath.Join(baseDir, "skills", args.SkillName+".md")
+		content, err := os.ReadFile(skillPath)
+		if err != nil {
+			return "", false, fmt.Errorf("failed to read skill %s: %w", args.SkillName, err)
+		}
+		return string(content), false, nil
+
 	default:
-		return "", refresh, fmt.Errorf("Unknown function %s", funcName)
+		return "", false, fmt.Errorf("unknown function: %s", funcName)
 	}
-	return result, refresh, nil
 }
