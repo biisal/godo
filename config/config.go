@@ -10,7 +10,7 @@ import (
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type Config struct {
@@ -125,7 +125,7 @@ func SaveCfg() error {
 }
 
 func initDb() error {
-	db, err := sql.Open("sqlite3", Cfg.DB_PATH)
+	db, err := sql.Open("sqlite", Cfg.DB_PATH)
 	if err != nil {
 		return err
 	}
