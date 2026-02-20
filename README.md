@@ -5,6 +5,14 @@
 #### An AI Agent built for the Terminal to boost your productivity.
 ## Installation
 
+### Using the install script (Recommended)
+
+```bash
+curl -sS https://raw.githubusercontent.com/biisal/godo/main/install | bash
+```
+
+### Using Go
+
 ```bash
 go install github.com/biisal/godo@latest
 ```
@@ -28,11 +36,32 @@ go install github.com/biisal/godo@latest
 
 ### Usage
 
-Add the following to your shell config file (e.g. `~/.bashrc`, `~/.zshrc`):
+#### Configuration & Environment Variables
+
+Godo can be configured using a `.env` file either in the directory you run the command from, or globally at `~/.local/share/godo/.env` (which is created automatically upon first run). 
+
+The following environment variables are supported:
+- `OPENAI_API_KEY`: Your model provider API Key.
+- `OPENAI_MODEL`: The model name to use (e.g. `gpt-4o-mini`).
+- `OPENAI_BASE_URL`: Custom API base URL if using compatible endpoints instead of OpenAI natively.
+
+**Demo: Using Local Ollama**
+To use Godo completely free and locally via [Ollama](https://ollama.com/), configure your environment variables like this:
+```bash
+OPENAI_API_KEY="ollama"
+OPENAI_MODEL="llama3.2"  # or whichever reasoning model you prefer
+OPENAI_BASE_URL="http://127.0.0.1:11434/v1"
+```
+
+#### Running Godo
+
+If you installed via the script, it should automatically add Godo to your PATH. If not, add the following to your shell config file (e.g. `~/.bashrc`, `~/.zshrc`):
 
 ```bash
-export PATH="$PATH:$HOME/go/bin"
+export PATH="$PATH:$HOME/.godo/bin"
 ```
+
+If you installed via `go install`, make sure your Go bin directory is in your PATH (`export PATH="$PATH:$HOME/go/bin"`).
 Then Restart your terminal and run:
 ```bash
 godo
