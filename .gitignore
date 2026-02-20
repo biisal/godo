@@ -2,3 +2,5 @@
 *.log
 tmp_build
 .gitignore
+dist
+VERSION
