@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/biisal/godo/tui/ui/styles"
+	"github.com/biisal/godo/internal/tui/ui/styles"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -71,17 +71,17 @@ func (d CustomDelegate) Render(w io.Writer, m list.Model, index int, listItem li
 	title := item.Title()
 	desc := item.Description()
 
-	rowStyle := d.Theme.ListTheme.RowStyle().Margin(0, 0).Padding(0, 2).BorderLeft(false)
+	rowStyle := styles.ListRowStyle.Margin(0, 0).Padding(0, 2).BorderLeft(false)
 
 	if item.Done && index != m.Index() {
-		rowStyle = rowStyle.Foreground(d.Theme.GetDarkGreenColor())
+		rowStyle = rowStyle.Foreground(styles.ColorDarkGreen)
 	} else if item.Done && index == m.Index() {
-		rowStyle = rowStyle.BorderForeground(d.Theme.GetGreenColor()).Padding(0, 1).BorderLeft(true).Foreground(d.Theme.GetGreenColor())
+		rowStyle = rowStyle.BorderForeground(styles.ColorGreen).Padding(0, 1).BorderLeft(true).Foreground(styles.ColorGreen)
 
 	} else if index == m.Index() {
 		rowStyle = rowStyle.BorderLeft(true).
 			Padding(0, 1).
-			Foreground(d.Theme.ListTheme.SelectedColor())
+			Foreground(styles.ColorPurple)
 	}
 	cropedDesc := desc
 	padding := 8

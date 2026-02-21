@@ -10,11 +10,11 @@ import (
 
 	// "time"
 
-	"github.com/biisal/godo/bus"
-	"github.com/biisal/godo/config"
-	todoAction "github.com/biisal/godo/tui/actions/todo"
-	"github.com/biisal/godo/tui/models/todo"
-	"github.com/biisal/godo/tui/ui/styles"
+	"github.com/biisal/godo/internal/bus"
+	"github.com/biisal/godo/internal/config"
+	todoAction "github.com/biisal/godo/internal/tui/actions/todo"
+	"github.com/biisal/godo/internal/tui/models/todo"
+	"github.com/biisal/godo/internal/tui/ui/styles"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -212,7 +212,7 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) tea.Cmd {
 }
 
 func (m *TeaModel) UpdateDescriptionContent() {
-	var LabelStyle = lipgloss.NewStyle().Background(m.Theme.TitleBackround()).Padding(0, 1).Foreground(lipgloss.Color("#000000")).Bold(true)
+	var LabelStyle = lipgloss.NewStyle().Background(styles.ColorPurple).Padding(0, 1).Foreground(lipgloss.Color("#000000")).Bold(true)
 	var rightContent string
 	if selectedItem := m.TodoModel.ListModel.List.SelectedItem(); selectedItem != nil {
 		slog.Debug("selected item in description view", "item", selectedItem)

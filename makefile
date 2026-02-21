@@ -1,5 +1,5 @@
 build:
-	go build -o godo main.go
+	go build -o godo cmd/godo/main.go
 
 run:
-	go run main.go
+	go run cmd/godo/main.go

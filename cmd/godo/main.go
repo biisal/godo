@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/biisal/godo/bus"
-	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/logger"
-	"github.com/biisal/godo/tui/actions/agent"
-	"github.com/biisal/godo/tui/ui"
+	"github.com/biisal/godo/internal/bus"
+	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/logger"
+	"github.com/biisal/godo/internal/tui/actions/agent"
+	"github.com/biisal/godo/internal/tui/ui"
 	tea "github.com/charmbracelet/bubbletea"
 )
 

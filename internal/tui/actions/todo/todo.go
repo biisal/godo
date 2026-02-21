@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/tui/models/todo"
+	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/tui/models/todo"
 )
 
 var (
@@ -30,11 +30,11 @@ func GetTodos() ([]todo.Todo, error) {
 	defer rows.Close()
 	todos := []todo.Todo{}
 	for rows.Next() {
-		var todo todo.Todo
-		if err := rows.Scan(&todo.ID, &todo.TitleText, &todo.DescriptionText, &todo.Done); err != nil {
+		var t todo.Todo
+		if err := rows.Scan(&t.ID, &t.TitleText, &t.DescriptionText, &t.Done); err != nil {
 			return nil, err
 		}
-		todos = append(todos, todo)
+		todos = append(todos, t)
 	}
 	return todos, nil
 }
@@ -94,10 +94,12 @@ func ToggleDone(id int, doneStatus ...bool) (bool, error) {
 	if _, err := config.Cfg.DB.Exec(sqlStmt, id); err != nil {
 		return false, err
 	}
-	isDone := false
-	config.Cfg.DB.QueryRow(`SELECT Done FROM todos WHERE Id = ?`, id).Scan(&isDone)
+	var isDone bool
+	err := config.Cfg.DB.QueryRow(`SELECT Done FROM todos WHERE Id = ?`, id).Scan(&isDone)
+	if err != nil {
+		return false, err
+	}
 	return isDone, nil
-
 }
 
 func GetTodosInfo() (int, int, int, error) {
@@ -105,13 +107,13 @@ func GetTodosInfo() (int, int, int, error) {
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	completd, total := 0, len(todos)
-	for _, todo := range todos {
-		if todo.Done {
-			completd++
+	completed, total := 0, len(todos)
+	for _, t := range todos {
+		if t.Done {
+			completed++
 		}
 	}
-	return total, completd, total - completd, nil
+	return total, completed, total - completed, nil
 }
 
 func GetTodoById(id int) (*todo.Todo, error) {
@@ -122,17 +124,20 @@ func GetTodoById(id int) (*todo.Todo, error) {
 	WHERE Id = ?
 	`
 	row := config.Cfg.DB.QueryRow(sqlStmt, id)
-	todo := &todo.Todo{}
-	if err := row.Scan(&todo.ID, &todo.TitleText, &todo.DescriptionText, &todo.Done); err != nil {
+	t := &todo.Todo{}
+	if err := row.Scan(&t.ID, &t.TitleText, &t.DescriptionText, &t.Done); err != nil {
 		return nil, err
 	}
-	return todo, nil
+	return t, nil
 }
 
 func PerformSqlQuery(sqlStmt string) (string, error) {
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
 		return "", err
+	}
+	if rows == nil {
+		return "[]", nil
 	}
 	defer rows.Close()
 
@@ -176,41 +181,4 @@ func PerformSqlQuery(sqlStmt string) (string, error) {
 	}
 	slog.Info("\n\nQuery Result", "query", sqlStmt, "result", string(out))
 	return string(out), nil
-}
-
-func getQueryType(sqlStmt string) string {
-	stmt := strings.ToUpper(strings.TrimSpace(sqlStmt))
-	if strings.HasPrefix(stmt, "SELECT") {
-		return "SELECT"
-	} else if strings.HasPrefix(stmt, "INSERT") {
-		return "INSERT"
-	} else if strings.HasPrefix(stmt, "UPDATE") {
-		return "UPDATE"
-	} else if strings.HasPrefix(stmt, "DELETE") {
-		return "DELETE"
-	} else if strings.HasPrefix(stmt, "CREATE") {
-		return "CREATE"
-	} else if strings.HasPrefix(stmt, "ALTER") {
-		return "ALTER"
-	} else if strings.HasPrefix(stmt, "DROP") {
-		return "DROP"
-	}
-	return "UNKNOWN"
-}
-
-func getSuggestionForError(errorMsg string) string {
-	errorMsg = strings.ToLower(errorMsg)
-
-	if strings.Contains(errorMsg, "no such table") {
-		return "Check if the table name exists and is spelled correctly"
-	} else if strings.Contains(errorMsg, "no such column") {
-		return "Verify the column name exists in the table schema"
-	} else if strings.Contains(errorMsg, "syntax error") {
-		return "Review SQL syntax - check for missing commas, quotes, or keywords"
-	} else if strings.Contains(errorMsg, "expected") && strings.Contains(errorMsg, "destination arguments") {
-		return "The number of columns in SELECT doesn't match the Scan destination"
-	} else if strings.Contains(errorMsg, "constraint") {
-		return "Check foreign key constraints or unique constraints"
-	}
-	return "Review the query for common SQL errors"
 }

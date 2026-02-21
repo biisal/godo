@@ -3,13 +3,13 @@ package ui
 import (
 	"strings"
 
-	"github.com/biisal/godo/bus"
-	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/tui/actions/agent"
-	agentModel "github.com/biisal/godo/tui/models/agent"
-	"github.com/biisal/godo/tui/models/todo"
+	"github.com/biisal/godo/internal/bus"
+	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/tui/actions/agent"
+	agentModel "github.com/biisal/godo/internal/tui/models/agent"
+	"github.com/biisal/godo/internal/tui/models/todo"
 
-	"github.com/biisal/godo/tui/ui/styles"
+	"github.com/biisal/godo/internal/tui/ui/styles"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -122,7 +122,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.RefreshList()
 		}
 		if msg.err != nil {
-			m.ChatContent.WriteString(m.Theme.GetErrorInChatStyle().Width(m.Width).Render(msg.err.Error()) + "\n")
+			m.ChatContent.WriteString(styles.ErrorInChatStyle.Width(m.Width).Render(msg.err.Error()) + "\n")
 			m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
 			m.AgentModel.ChatViewport.GotoBottom()
 		} else {
@@ -131,7 +131,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case bus.StreamMsg:
 		if msg.IsUser {
-			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(msg.Text) + "\n")
+			m.ChatContent.WriteString(styles.UserContentStyle.Width(m.Width).Render(msg.Text) + "\n")
 			return m, nil
 		}
 		if msg.Type == "status" {
@@ -161,28 +161,29 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TeaModel) View() string {
-	var s string
 	hs, helpBarHeight := HelpBarView(m)
 
 	maxHeight := m.Height - helpBarHeight
 	var errorView string
 	if m.Error != nil {
-		errorView = m.Theme.GetEorrorStyle().Width(m.Width * 50 / 100).AlignHorizontal(lipgloss.Left).Render(m.Error.Error())
+		errorView = styles.ErrorStyle.Width(m.Width * 50 / 100).AlignHorizontal(lipgloss.Left).Render(m.Error.Error())
 		maxHeight -= lipgloss.Height(errorView)
 	}
 
+	var s strings.Builder
+
 	if m.IsShowHelp {
-		s += HelpPageView(m, maxHeight)
+		s.WriteString(HelpPageView(m, maxHeight))
 	} else {
 		switch m.Choices[m.SelectedIndex].Value {
 		case TodoMode.Value:
-			s += TodoView(m, maxHeight)
+			s.WriteString(TodoView(m, maxHeight))
 		case AgentMode.Value:
-			s += AgentView(m, maxHeight)
+			s.WriteString(AgentView(m, maxHeight))
 		}
 	}
-	s = lipgloss.JoinVertical(lipgloss.Center, errorView, s, hs)
-	return s
+
+	return lipgloss.JoinVertical(lipgloss.Center, errorView, s.String(), hs)
 }
 
 func (m *TeaModel) Init() tea.Cmd {

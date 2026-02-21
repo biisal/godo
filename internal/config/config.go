@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ var (
 	StartTime      time.Time
 	Ping           = make(chan string, 250)
 	HomeDIR        string
-	AppDIR         = "/.local/share/godo/"
+	AppDIR         = "/.godo/"
 	AppName        = "logs"
 	LogDIR         string
 	EroorType      = "error"
@@ -60,9 +61,9 @@ func MustLoad() error {
 		return err
 	}
 
-	loadEnv([]string{"./.env", HomeDIR + AppDIR + ".env"})
+	loadEnv([]string{"./.env", filepath.Join(HomeDIR, AppDIR, ".env")})
 
-	if err := cleanenv.ReadEnv(&Cfg); err != nil {
+	if err = cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
 	}
 	StartTime = time.Now()

@@ -17,7 +17,7 @@ before:
     - sh -c "echo {{.Version}} > VERSION"
 
 builds:
-  - main: ./main.go
+  - main: ./cmd/godo/main.go
     env:
       - CGO_ENABLED=0
     goos:

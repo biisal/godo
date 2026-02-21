@@ -1,10 +1,13 @@
-package identity
+package builder
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/biisal/godo/internal/config"
 )
 
 // SkillsLoader interface placeholder for future implementation
@@ -36,11 +39,17 @@ type ContextBuilder struct {
 func NewContextBuilder() *ContextBuilder {
 	// Resolve base directory dynamically based on current working directory
 	baseDir, _ := os.Getwd()
-	// Assuming identity is at the root of the project
-	identityDir := filepath.Join(baseDir, "identity")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		slog.Warn("Could not determine user home directory, falling back to current directory", "err", err)
+		homeDir = baseDir
+	}
+	var identityDir string
+
+	identityDir = filepath.Join(homeDir, config.AppDIR, "content", "identity")
 
 	return &ContextBuilder{
-		skillsLoader: NewFileSkillsLoader(baseDir), // pass baseDir so it resolves to project_root/skills
+		skillsLoader: NewFileSkillsLoader(filepath.Join(homeDir, config.AppDIR, "content")), // resolves to homeDir/.godo/content/skills
 		memory:       &DummyMemory{},
 		baseDir:      identityDir,
 	}

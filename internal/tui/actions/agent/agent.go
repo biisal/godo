@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/biisal/godo/bus"
-	"github.com/biisal/godo/config"
-	"github.com/biisal/godo/identity"
-	"github.com/biisal/godo/tui/actions/todo"
-	"github.com/biisal/godo/tui/models/agent"
+	"github.com/biisal/godo/internal/builder"
+	"github.com/biisal/godo/internal/bus"
+	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/tui/actions/todo"
+	"github.com/biisal/godo/internal/tui/models/agent"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
@@ -29,14 +29,14 @@ type Bot struct {
 }
 
 func NewBot() *Bot {
-	builder := identity.NewContextBuilder()
+	cb := builder.NewContextBuilder()
 	c := openai.NewClient(
 		option.WithAPIKey(config.Cfg.OPENAI_API_KEY),
 		option.WithBaseURL(config.Cfg.OPENAI_BASE_URL),
 	)
 	return &Bot{
 		tools:        FormattedFunctions(),
-		systemPrompt: builder.BuildSystemPrompt(),
+		systemPrompt: cb.BuildSystemPrompt(),
 		client:       &c,
 	}
 }
@@ -45,18 +45,19 @@ func (b *Bot) GetChatHistoryFromDB() (*[]agent.Message, error) {
 	sqlStmt := "SELECT chat FROM chats"
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("failed to query chats: %w", err)
 	}
 	defer rows.Close()
+
 	var history []agent.Message
 	for rows.Next() {
 		var chatContent []byte
 		if err := rows.Scan(&chatContent); err != nil {
-			fmt.Println(err)
+			return nil, fmt.Errorf("failed to scan chat: %w", err)
 		}
 		msg := agent.Message{}
 		if err := json.Unmarshal(chatContent, &msg); err != nil {
-			fmt.Println(err)
+			return nil, fmt.Errorf("failed to unmarshal chat: %w", err)
 		}
 		history = append(history, msg)
 	}
@@ -91,12 +92,16 @@ func toOAIMessage(m agent.Message) openai.ChatCompletionMessageParamUnion {
 		if len(m.ToolCalls) > 0 {
 			calls := make([]openai.ChatCompletionMessageToolCallParam, 0, len(m.ToolCalls))
 			for _, tc := range m.ToolCalls {
+				args := tc.Function.Arguments
+				if args == "" || !json.Valid([]byte(args)) {
+					args = "{}"
+				}
 				calls = append(calls, openai.ChatCompletionMessageToolCallParam{
 					ID:   tc.ID,
 					Type: "function",
 					Function: openai.ChatCompletionMessageToolCallFunctionParam{
 						Name:      tc.Function.Name,
-						Arguments: tc.Function.Arguments,
+						Arguments: args,
 					},
 				})
 			}
@@ -124,7 +129,7 @@ func (b *Bot) initOAIMessages() {
 	}
 }
 
-const maxToolSteps = 5
+const maxToolSteps = 20
 
 func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
 	if delta.JSON.ExtraFields == nil {
@@ -145,9 +150,10 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		isRefresh = refresh[0]
 	}
 
-	slog.Info("Running initOAIMessages", "time", time.Now())
+	startTime := time.Now()
+	slog.Info("Running initOAIMessages", "time", startTime)
 	b.initOAIMessages()
-	slog.Info("Finished initOAIMessages", "time", time.Now(), "time taken", time.Since(time.Now()))
+	slog.Info("Finished initOAIMessages", "time taken", time.Since(startTime))
 
 	for range maxToolSteps {
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -203,9 +209,9 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 
 			for _, tc := range toolCalls {
 				bus.EmitToolCall(tc.Function.Name)
-				// slog.Info("\n\nRunning tool----------------------------", "name", tc.Function.Name, "args", tc.Function.Arguments)
+				slog.Info("\n\nRunning tool----------------------------", "name", tc.Function.Name, "args", tc.Function.Arguments)
 				result, shouldRefresh, err := runFunction(tc.Function.Name, tc)
-				// slog.Info("\n\nTool result----------------------------", "result", result, "shouldRefresh", shouldRefresh, "err", err)
+				slog.Info("\n\nTool result----------------------------", "result", result, "shouldRefresh", shouldRefresh, "err", err)
 				isRefresh = isRefresh || shouldRefresh
 				var resultStr string
 				if err != nil {
@@ -297,8 +303,12 @@ func runFunction(funcName string, tc openai.ChatCompletionMessageToolCall) (any,
 		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
 			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
 		}
-		baseDir, _ := os.Getwd()
-		skillPath := filepath.Join(baseDir, "skills", args.SkillName+".md")
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			slog.Warn("Could not determine user home directory for skills", "err", err)
+			homeDir, _ = os.Getwd()
+		}
+		skillPath := filepath.Join(homeDir, config.AppDIR, "content", "skills", args.SkillName+".md")
 		content, err := os.ReadFile(skillPath)
 		if err != nil {
 			return "", false, fmt.Errorf("failed to read skill %s: %w", args.SkillName, err)

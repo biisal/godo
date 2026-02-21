@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/biisal/godo/tui/ui/styles"
+	"github.com/biisal/godo/internal/tui/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
 )
@@ -15,7 +15,7 @@ func RenderListView(m *TeaModel, maxHeight int) string {
 
 	m.UpdateDescriptionContent()
 	right := styles.TodoDescViewportStyle.Width(m.Width - leftWidth - 1).
-		BorderForeground(m.Theme.GetBorderColor()).
+		BorderForeground(styles.ColorDarkGray).
 		Height(maxHeight).
 		Render(m.TodoModel.ListModel.DescViewport.View())
 
@@ -75,12 +75,12 @@ func TodoView(m *TeaModel, maxHeight int) string {
 func AgentView(m *TeaModel, maxHeight int) string {
 
 	outerChatIViewHeight := maxHeight * 80 / 100
-	chatstyle := styles.AgentChatViewStyle.Width(m.Width).Foreground(m.Theme.GetAgentContentStyle().GetForeground())
+	chatstyle := styles.AgentChatViewStyle.Width(m.Width).Foreground(styles.AgentContentStyle.GetForeground())
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 
-	m.AgentModel.ChatViewport.Style.Foreground(m.Theme.GetAgentContentStyle().GetForeground())
+	m.AgentModel.ChatViewport.Style.Foreground(styles.AgentContentStyle.GetForeground())
 	m.AgentModel.ChatViewport.Width = m.Width - cWidth
 	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), m.Width-cWidth))
 	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
@@ -98,8 +98,8 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	if m.AgentModel.StatusText != "" {
 		statusText = m.AgentModel.StatusText
 	}
-	middleLeft := m.Theme.GetInstructionStyle().Render(statusText)
-	middleRight := m.Theme.GetInstructionStyle().Render("Scroll: PageUp / PageDown")
+	middleLeft := styles.InstructionStyle.Render(statusText)
+	middleRight := styles.InstructionStyle.Render("Scroll: PageUp / PageDown")
 	middle := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		styles.HalfWidthLeftStyle.Width(m.Width/2).Render(middleLeft),
@@ -197,7 +197,7 @@ Press ctrl+u to close`
 	style := lipgloss.NewStyle().
 		Padding(2).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.Theme.GetBorderColor()).
+		BorderForeground(styles.ColorDarkGray).
 		Foreground(lipgloss.Color("#ffffff")).
 		Width(m.Width * 40 / 100)
 
@@ -212,32 +212,32 @@ Press ctrl+u to close`
 }
 func HelpBarView(m *TeaModel) (string, int) {
 	var s string
-	modeUi := ""
+	var modeUi strings.Builder
 	if m.Choices[m.SelectedIndex].Value == TodoMode.Value {
 		totalChoices := len(m.TodoModel.Choices)
 		for i, choice := range m.TodoModel.Choices {
-			defalutStyles := m.Theme.ModeStyle()
+			defalutStyles := styles.ModeStyle
 			if i == totalChoices-1 {
 				defalutStyles = defalutStyles.MarginRight(1)
 			}
 			if choice.Value == m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
-				modeUi += defalutStyles.Background(m.Theme.ListTheme.SelectedColor()).Render(choice.Label)
+				modeUi.WriteString(defalutStyles.Background(styles.ColorPurple).Render(choice.Label))
 			} else {
-				modeUi += defalutStyles.Render(choice.Label)
+				modeUi.WriteString(defalutStyles.Render(choice.Label))
 			}
 		}
 	}
 	for _, choice := range m.Choices {
 		if choice.Value == m.Choices[m.SelectedIndex].Value {
-			modeUi += m.Theme.ModeStyle().Background(m.Theme.ListTheme.SelectedColor()).Render(choice.Label)
+			modeUi.WriteString(styles.ModeStyle.Background(styles.ColorPurple).Render(choice.Label))
 		} else {
-			modeUi += m.Theme.ModeStyle().Render(choice.Label)
+			modeUi.WriteString(styles.ModeStyle.Render(choice.Label))
 		}
 	}
-	rightPart := m.Theme.GetInstructionStyle().AlignHorizontal(lipgloss.Right).Render(modeUi)
+	rightPart := styles.InstructionStyle.AlignHorizontal(lipgloss.Right).Render(modeUi.String())
 	rightWidth := lipgloss.Width(rightPart)
 
-	leftPart := m.Theme.GetInstructionStyle().Width(m.Width - rightWidth).Render("Help: Ctrl+b")
+	leftPart := styles.InstructionStyle.Width(m.Width - rightWidth).Render("Help: Ctrl+b")
 
 	s = lipgloss.JoinHorizontal(lipgloss.Top, leftPart, rightPart)
 	return s, lipgloss.Height(s)
@@ -245,48 +245,52 @@ func HelpBarView(m *TeaModel) (string, int) {
 
 func (m *TeaModel) BuildAgentTextUI(text string) {
 	defer m.AgentModel.ChatViewport.GotoBottom()
+	marginText := lipgloss.NewStyle().MarginBottom(1).Render()
 
 	switch text {
 	case "START":
 		m.AgentModel.CurrentReasoning.Reset()
 	case "DONE":
-		m.ChatContent.WriteString("\n")
+		m.ChatContent.WriteString(marginText)
 	default:
-		// Add a newline spacer if we just finished thinking and are transitioning to actual text
 		if m.AgentModel.CurrentReasoning.Len() > 0 {
-			m.ChatContent.WriteString("\n\n")
+			m.ChatContent.WriteString(marginText)
 			m.AgentModel.CurrentReasoning.Reset()
 		}
 
 		text = strings.ReplaceAll(text, "**", "")
-		m.ChatContent.WriteString(text)
+		m.ChatContent.WriteString(styles.AgentContentStyle.Render(text))
 	}
 }
 
 func (m *TeaModel) BuildThinkingTextUI(text string) {
 	defer m.AgentModel.ChatViewport.GotoBottom()
-	// Accumulate reasoning
 	m.AgentModel.CurrentReasoning.WriteString(text)
 
-	// Stream live to the screen as faded text
 	m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(text))
 }
 
 func (m *TeaModel) RenderChatContentFromHistory() {
-	m.ChatContent.Reset()
+	var chatBlocks []string
 	for _, msg := range m.AgentBot.History {
 		text := msg.Content
 		switch msg.Role {
 		case "user":
-			m.ChatContent.WriteString(m.Theme.GetUserContentStyle().Width(m.Width).Render(text))
+			chatBlocks = append(chatBlocks, styles.UserContentStyle.Width(m.Width).Render(text))
 		default:
 			if msg.Reasoning != "" {
-				m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(msg.Reasoning) + "\n\n")
+				chatBlocks = append(chatBlocks, styles.ThinkingTokenStyle.Render(msg.Reasoning))
 			}
-			m.ChatContent.WriteString(text + "\n")
+			if text != "" {
+				chatBlocks = append(chatBlocks, styles.AgentContentStyle.Render(text))
+			}
 		}
 	}
-	content := m.ChatContent.String()
+
+	content := lipgloss.JoinVertical(lipgloss.Left, chatBlocks...)
+	m.ChatContent.Reset()
+	m.ChatContent.WriteString(content)
+	m.ChatContent.WriteString(lipgloss.NewStyle().MarginBottom(1).Render())
 	m.AgentModel.ChatViewport.SetContent(content)
 	if len(content) > 0 && m.AgentModel.ChatViewport.Height > 0 {
 		m.AgentModel.ChatViewport.GotoBottom()

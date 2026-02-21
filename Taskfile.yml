@@ -1,0 +1,63 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the Go application
+    cmds:
+      - go build -o godo cmd/godo/main.go
+
+  build:dist:
+    desc: Build for distribution
+    cmds:
+      - goreleaser build --snapshot --clean
+
+  run:
+    desc: Run the application
+    cmds:
+      - go run cmd/godo/main.go
+
+  test:
+    desc: Run tests (fail fast)
+    cmds:
+      - go test -failfast ./...
+
+  test:verbose:
+    desc: Run tests with verbose output (fail fast)
+    cmds:
+      - go test -v -failfast ./...
+
+  tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
+
+  lint:
+    desc: Run linter
+    cmds:
+      - go vet ./...
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f godo
+      - rm -rf dist/
+
+  install:
+    desc: Install the application
+    cmds:
+      - go install cmd/godo/main.go
+
+  release:
+    desc: Create a release build
+    cmds:
+      - goreleaser release --clean
+
+  deps:
+    desc: Show Go dependencies
+    cmds:
+      - go mod graph
+
+  version:
+    desc: Show Go version
+    cmds:
+      - go version

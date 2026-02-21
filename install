@@ -109,6 +109,26 @@ fi
 chmod +x "${INSTALL_DIR}/$APP"
 log "Binary installed to: ${MUTED}$INSTALL_DIR/$APP${NC}"
 
+log "Downloading identity files..."
+mkdir -p "$HOME/.godo/content/identity"
+files=$(curl -s "https://api.github.com/repos/$REPO/contents/content/identity" | grep '"name":' | cut -d '"' -f 4 | grep '\.md$' || true)
+if [ -n "$files" ]; then
+    for file in $files; do
+        log "Fetching $file..."
+        curl -s -L -o "$HOME/.godo/content/identity/$file" "https://raw.githubusercontent.com/$REPO/main/content/identity/$file" || true
+    done
+fi
+
+log "Downloading skills files..."
+mkdir -p "$HOME/.godo/content/skills"
+files=$(curl -s "https://api.github.com/repos/$REPO/contents/content/skills" | grep '"name":' | cut -d '"' -f 4 | grep '\.md$' || true)
+if [ -n "$files" ]; then
+    for file in $files; do
+        log "Fetching $file..."
+        curl -s -L -o "$HOME/.godo/content/skills/$file" "https://raw.githubusercontent.com/$REPO/main/content/skills/$file" || true
+    done
+fi
+
 # Shell Path Configuration
 if [ "$no_modify_path" = "false" ]; then
     log "Configuring shell path..."
