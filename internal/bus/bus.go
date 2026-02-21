@@ -39,7 +39,38 @@ func EmitUser(text string) {
 
 // EmitToolCall sends a status for an active tool call.
 func EmitToolCall(name string) {
-	EmitStatus(fmt.Sprintf("🔧 Calling %s...", name))
+	EmitStatus(toolStatusMessage(name))
+}
+
+func toolStatusMessage(name string) string {
+	switch name {
+	case "PerformSql":
+		return "Checking your todos..."
+	case "RunShellCommand":
+		return "Running command..."
+	case "ReadSkill":
+		return "Loading skill instructions..."
+	case "GlobSearch":
+		return "Searching files by pattern..."
+	case "ReadFiles":
+		return "Reading files..."
+	case "ProjectTree":
+		return "Building project tree..."
+	case "DuckDuckGoSearch":
+		return "Searching the web..."
+	case "ScrapePage":
+		return "Reading webpage content..."
+	case "WriteFile":
+		return "Writing file..."
+	case "EditFile":
+		return "Editing file..."
+	case "PatchFile":
+		return "Applying patch..."
+	case "InsertAtLine":
+		return "Inserting content into file..."
+	default:
+		return fmt.Sprintf("Running %s...", name)
+	}
 }
 
 // EmitShell sends shell command or output for the side panel.
