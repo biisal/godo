@@ -75,23 +75,42 @@ func TodoView(m *TeaModel, maxHeight int) string {
 func AgentView(m *TeaModel, maxHeight int) string {
 
 	outerChatIViewHeight := maxHeight * 80 / 100
-	chatstyle := styles.AgentChatViewStyle.Width(m.Width).Foreground(styles.AgentContentStyle.GetForeground())
+	chatstyle := styles.AgentChatViewStyle.Foreground(styles.AgentContentStyle.GetForeground())
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
-	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
+	chatWidth := m.Width
+	var shellPanel string
+	if m.AgentModel.ShellContent.Len() > 0 {
+		chatWidth = m.Width * 60 / 100
+		shellWidth := m.Width - chatWidth - 2
+		m.AgentModel.ShellViewport.Width = shellWidth
+		m.AgentModel.ShellViewport.Height = outerChatIViewHeight - 2
+		shellPanel = styles.ShellSidePanelStyle.
+			Width(shellWidth).
+			Height(outerChatIViewHeight - 2).
+			Render(m.AgentModel.ShellViewport.View())
+	}
 
+	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 	m.AgentModel.ChatViewport.Style.Foreground(styles.AgentContentStyle.GetForeground())
-	m.AgentModel.ChatViewport.Width = m.Width - cWidth
-	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), m.Width-cWidth))
-	chatView := chatstyle.Render(m.AgentModel.ChatViewport.View())
+	m.AgentModel.ChatViewport.Width = chatWidth - cWidth
+	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), chatWidth-cWidth))
+	chatView := chatstyle.Width(chatWidth).Render(m.AgentModel.ChatViewport.View())
+
+	var combinedView string
+	if shellPanel != "" {
+		combinedView = lipgloss.JoinHorizontal(lipgloss.Top, chatView, shellPanel)
+	} else {
+		combinedView = chatView
+	}
 
 	// Top section
 	topPart := lipgloss.Place(
 		m.Width,
 		outerChatIViewHeight,
-		lipgloss.Center,
+		lipgloss.Left,
 		lipgloss.Top,
-		chatView,
+		combinedView,
 	)
 
 	statusText := "Quit: Esc / Ctrl+C"
@@ -258,8 +277,7 @@ func (m *TeaModel) BuildAgentTextUI(text string) {
 			m.AgentModel.CurrentReasoning.Reset()
 		}
 
-		text = strings.ReplaceAll(text, "**", "")
-		m.ChatContent.WriteString(styles.AgentContentStyle.Render(text))
+		m.ChatContent.WriteString(text)
 	}
 }
 

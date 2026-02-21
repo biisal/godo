@@ -14,6 +14,8 @@ type AgentModel struct {
 	ChatViewport     viewport.Model
 	StatusText       string
 	CurrentReasoning strings.Builder
+	ShellViewport    viewport.Model
+	ShellContent     strings.Builder
 }
 
 const (

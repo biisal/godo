@@ -5,23 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/biisal/godo/internal/builder"
 	"github.com/biisal/godo/internal/bus"
 	"github.com/biisal/godo/internal/config"
-	"github.com/biisal/godo/internal/tui/actions/todo"
-	"github.com/biisal/godo/internal/tui/models/agent"
+	agentModel "github.com/biisal/godo/internal/tui/models/agent"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
 
 type Bot struct {
-	History      []agent.Message
+	History      []agentModel.Message
 	oaiMessages  []openai.ChatCompletionMessageParamUnion
 	client       *openai.Client
 	tools        []openai.ChatCompletionToolParam
@@ -41,7 +37,7 @@ func NewBot() *Bot {
 	}
 }
 
-func (b *Bot) GetChatHistoryFromDB() (*[]agent.Message, error) {
+func (b *Bot) GetChatHistoryFromDB() (*[]agentModel.Message, error) {
 	sqlStmt := "SELECT chat FROM chats"
 	rows, err := config.Cfg.DB.Query(sqlStmt)
 	if err != nil {
@@ -49,13 +45,13 @@ func (b *Bot) GetChatHistoryFromDB() (*[]agent.Message, error) {
 	}
 	defer rows.Close()
 
-	var history []agent.Message
+	var history []agentModel.Message
 	for rows.Next() {
 		var chatContent []byte
 		if err := rows.Scan(&chatContent); err != nil {
 			return nil, fmt.Errorf("failed to scan chat: %w", err)
 		}
-		msg := agent.Message{}
+		msg := agentModel.Message{}
 		if err := json.Unmarshal(chatContent, &msg); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal chat: %w", err)
 		}
@@ -64,7 +60,7 @@ func (b *Bot) GetChatHistoryFromDB() (*[]agent.Message, error) {
 	return &history, nil
 }
 
-func (b *Bot) AddChatToDB(msg agent.Message) error {
+func (b *Bot) AddChatToDB(msg agentModel.Message) error {
 	sqlStmt := "INSERT INTO chats (chat) VALUES (?)"
 	msgJson, err := json.Marshal(msg)
 	if err != nil {
@@ -84,11 +80,11 @@ func (b *Bot) TruncateChats() error {
 	return err
 }
 
-func toOAIMessage(m agent.Message) openai.ChatCompletionMessageParamUnion {
+func toOAIMessage(m agentModel.Message) openai.ChatCompletionMessageParamUnion {
 	switch m.Role {
-	case agent.UserRole:
+	case agentModel.UserRole:
 		return openai.UserMessage(m.Content)
-	case agent.AssistantRole:
+	case agentModel.AssistantRole:
 		if len(m.ToolCalls) > 0 {
 			calls := make([]openai.ChatCompletionMessageToolCallParam, 0, len(m.ToolCalls))
 			for _, tc := range m.ToolCalls {
@@ -109,14 +105,14 @@ func toOAIMessage(m agent.Message) openai.ChatCompletionMessageParamUnion {
 			return openai.ChatCompletionMessageParamUnion{OfAssistant: &asst}
 		}
 		return openai.AssistantMessage(m.Content)
-	case agent.ToolRole:
+	case agentModel.ToolRole:
 		return openai.ToolMessage(m.Content, m.ToolCallID)
 	default:
 		return openai.UserMessage(m.Content)
 	}
 }
 
-func (b *Bot) appendMessage(msg agent.Message) {
+func (b *Bot) appendMessage(msg agentModel.Message) {
 	b.History = append(b.History, msg)
 	b.oaiMessages = append(b.oaiMessages, toOAIMessage(msg))
 }
@@ -129,7 +125,7 @@ func (b *Bot) initOAIMessages() {
 	}
 }
 
-const maxToolSteps = 20
+const maxToolSteps = 200
 
 func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
 	if delta.JSON.ExtraFields == nil {
@@ -156,7 +152,7 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 	slog.Info("Finished initOAIMessages", "time taken", time.Since(startTime))
 
 	for range maxToolSteps {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithCancel(context.Background())
 
 		stream := b.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 			Model:    config.Cfg.OPENAI_MODEL,
@@ -196,8 +192,8 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		toolCalls := choice.Message.ToolCalls
 
 		if len(toolCalls) > 0 {
-			assistantMsg := agent.Message{
-				Role:      agent.AssistantRole,
+			assistantMsg := agentModel.Message{
+				Role:      agentModel.AssistantRole,
 				ToolCalls: toolCalls,
 			}
 			if txt := strings.TrimSpace(choice.Message.Content); txt != "" {
@@ -217,12 +213,16 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 				if err != nil {
 					resultStr = err.Error()
 				} else {
-					b, _ := json.Marshal(result)
-					resultStr = string(b)
+					if text, ok := result.(string); ok {
+						resultStr = text
+					} else {
+						b, _ := json.Marshal(result)
+						resultStr = string(b)
+					}
 				}
 
-				toolMsg := agent.Message{
-					Role:       agent.ToolRole,
+				toolMsg := agentModel.Message{
+					Role:       agentModel.ToolRole,
 					ToolCallID: tc.ID,
 					Name:       tc.Function.Name,
 					Content:    resultStr,
@@ -234,8 +234,8 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 
 		finalText := choice.Message.Content
 		if finalText != "" || reasoningBuilder.Len() > 0 {
-			msg := agent.Message{
-				Role:      agent.AssistantRole,
+			msg := agentModel.Message{
+				Role:      agentModel.AssistantRole,
 				Reasoning: reasoningBuilder.String(),
 				Content:   finalText,
 			}
@@ -249,9 +249,9 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 	return isRefresh, fmt.Errorf("agent exceeded max tool steps (%d)", maxToolSteps)
 }
 
-func (b *Bot) AgentResponse(prompt string) ([]agent.Message, bool, error) {
-	userMsg := agent.Message{
-		Role:    agent.UserRole,
+func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
+	userMsg := agentModel.Message{
+		Role:    agentModel.UserRole,
 		Content: prompt,
 	}
 	b.History = append(b.History, userMsg)
@@ -269,52 +269,29 @@ func (b *Bot) AgentResponse(prompt string) ([]agent.Message, bool, error) {
 func runFunction(funcName string, tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
 	switch funcName {
 	case PerformSqlFunc:
-		var args struct {
-			Query string `json:"query"`
-		}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
-			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
-		}
-		result, err := todo.PerformSqlQuery(args.Query)
-		if err != nil {
-			return "", false, err
-		}
-		return result, true, nil
-
+		return runPerformSql(tc)
 	case RunShellCommandFunc:
-		var args struct {
-			Command string `json:"command"`
-		}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
-			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
-		}
-		cmd := exec.Command("sh", "-c", args.Command)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return string(out) + "\nError: " + err.Error(), false, nil
-		}
-		slog.Debug("command output", "output", string(out))
-		return string(out), false, nil
-
+		return runShellCommand(tc)
 	case ReadSkillFunc:
-		var args struct {
-			SkillName string `json:"skillName"`
-		}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
-			return "", false, fmt.Errorf("invalid tool arguments: %w", err)
-		}
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			slog.Warn("Could not determine user home directory for skills", "err", err)
-			homeDir, _ = os.Getwd()
-		}
-		skillPath := filepath.Join(homeDir, config.AppDIR, "content", "skills", args.SkillName+".md")
-		content, err := os.ReadFile(skillPath)
-		if err != nil {
-			return "", false, fmt.Errorf("failed to read skill %s: %w", args.SkillName, err)
-		}
-		return string(content), false, nil
-
+		return runReadSkill(tc)
+	case GlobSearchFunc:
+		return runGlobSearch(tc)
+	case ReadFilesFunc:
+		return runReadFiles(tc)
+	case ProjectTreeFunc:
+		return runProjectTree(tc)
+	case DuckDuckGoSearchFunc:
+		return runDuckDuckGoSearch(tc)
+	case ScrapePageFunc:
+		return runScrapePage(tc)
+	case WriteFileFunc:
+		return runWriteFile(tc)
+	case EditFileFunc:
+		return runEditFile(tc)
+	case PatchFileFunc:
+		return runPatchFile(tc)
+	case InsertAtLineFunc:
+		return runInsertAtLine(tc)
 	default:
 		return "", false, fmt.Errorf("unknown function: %s", funcName)
 	}

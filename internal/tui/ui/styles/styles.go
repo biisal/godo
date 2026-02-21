@@ -115,6 +115,15 @@ var (
 			Padding(0, 1).
 			Foreground(ColorError).
 			Background(ColorErrorBg)
+
+	ShellSidePanelStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(ColorDarkGray).
+				Padding(1).
+				MarginLeft(1)
+
+	ShellOutputStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#50FA7B")) // Dracula Green
 )
 
 type ListTheme struct{}

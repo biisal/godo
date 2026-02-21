@@ -41,3 +41,8 @@ func EmitUser(text string) {
 func EmitToolCall(name string) {
 	EmitStatus(fmt.Sprintf("🔧 Calling %s...", name))
 }
+
+// EmitShell sends shell command or output for the side panel.
+func EmitShell(text string) {
+	StreamResponse <- StreamMsg{Text: text, Type: "shell"}
+}

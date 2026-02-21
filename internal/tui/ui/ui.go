@@ -93,8 +93,9 @@ func InitialModel(agentBot *agent.Bot) *TeaModel {
 			Choices:       []todo.Mode{TodoListMode, TodoAddMode, TodoEditMode},
 		},
 		AgentModel: agentModel.AgentModel{
-			PromptInput:  promptInput,
-			ChatViewport: viewport.Model{},
+			PromptInput:   promptInput,
+			ChatViewport:  viewport.Model{},
+			ShellViewport: viewport.Model{},
 		},
 	}
 
@@ -134,13 +135,17 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ChatContent.WriteString(styles.UserContentStyle.Width(m.Width).Render(msg.Text) + "\n")
 			return m, nil
 		}
-		if msg.Type == "status" {
+		switch msg.Type {
+		case "status":
 			m.AgentModel.StatusText = msg.Text
 			return m, nil
-		}
-		if msg.Type == "thinking" {
+		case "thinking":
 			m.BuildThinkingTextUI(msg.Text)
-		} else {
+		case "shell":
+			m.AgentModel.ShellContent.WriteString(msg.Text)
+			m.AgentModel.ShellViewport.SetContent(styles.ShellOutputStyle.Render(m.AgentModel.ShellContent.String()))
+			m.AgentModel.ShellViewport.GotoBottom()
+		default:
 			m.BuildAgentTextUI(msg.Text)
 		}
 		return m, nil
