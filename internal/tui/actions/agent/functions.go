@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PerformSqlFunc       = "PerformSql"
+	PerformSQLFunc       = "PerformSql"
 	RunShellCommandFunc  = "RunShellCommand"
 	ReadSkillFunc        = "ReadSkill"
 	GlobSearchFunc       = "GlobSearch"
@@ -21,12 +21,27 @@ const (
 	InsertAtLineFunc     = "InsertAtLine"
 )
 
+var tools = map[string]func(openai.ChatCompletionMessageToolCall) (any, bool, error){
+	PerformSQLFunc:       runPerformSql,
+	RunShellCommandFunc:  runShellCommand,
+	ReadSkillFunc:        runReadSkill,
+	GlobSearchFunc:       runGlobSearch,
+	ReadFilesFunc:        runReadFiles,
+	ProjectTreeFunc:      runProjectTree,
+	DuckDuckGoSearchFunc: runDuckDuckGoSearch,
+	ScrapePageFunc:       runScrapePage,
+	WriteFileFunc:        runWriteFile,
+	EditFileFunc:         runEditFile,
+	PatchFileFunc:        runPatchFile,
+	InsertAtLineFunc:     runInsertAtLine,
+}
+
 func FormattedFunctions() []openai.ChatCompletionToolParam {
 	return []openai.ChatCompletionToolParam{
 		{
 			Type: constant.Function("function"),
 			Function: shared.FunctionDefinitionParam{
-				Name: PerformSqlFunc,
+				Name: PerformSQLFunc,
 				Description: openai.String(`Execute any SQLite query on the 'todos' database.
 CRITICAL: You MUST use this tool for ALL todo-related operations (listing, adding, completing, editing, deleting, finding).
 DO NOT use the RunShellCommand tool for todo management.

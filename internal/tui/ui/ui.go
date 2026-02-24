@@ -56,6 +56,7 @@ func getDescInput(placeholder string) textarea.Model {
 	input.Placeholder = placeholder
 	return input
 }
+
 func getTitleInput(focus bool, s ...string) textinput.Model {
 	input := textinput.New()
 	if len(s) > 0 {
@@ -69,10 +70,11 @@ func getTitleInput(focus bool, s ...string) textinput.Model {
 	}
 	return input
 }
-func InitialModel(agentBot *agent.Bot) *TeaModel {
 
+func InitialModel(agentBot *agent.Bot) *TeaModel {
 	promptInput := textinput.New()
 	promptInput.Focus()
+	promptInput.Placeholder = "Ask me anything.. ANYTHING..."
 	teaModel := TeaModel{
 		AgentBot:      agentBot,
 		SelectedIndex: 1,
@@ -118,7 +120,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch msg := msg.(type) {
 	case agentResponseMsg:
-		m.AgentModel.StatusText = ""
 		if msg.refresh {
 			m.RefreshList()
 		}

@@ -74,14 +74,13 @@ func (d CustomDelegate) Render(w io.Writer, m list.Model, index int, listItem li
 	rowStyle := styles.ListRowStyle.Margin(0, 0).Padding(0, 2).BorderLeft(false)
 
 	if item.Done && index != m.Index() {
-		rowStyle = rowStyle.Foreground(styles.ColorDarkGreen)
+		rowStyle = rowStyle.Foreground(styles.Colors().Success)
 	} else if item.Done && index == m.Index() {
-		rowStyle = rowStyle.BorderForeground(styles.ColorGreen).Padding(0, 1).BorderLeft(true).Foreground(styles.ColorGreen)
-
+		rowStyle = rowStyle.BorderForeground(styles.Colors().Success).Padding(0, 1).BorderLeft(true).Foreground(styles.Colors().Success)
 	} else if index == m.Index() {
 		rowStyle = rowStyle.BorderLeft(true).
 			Padding(0, 1).
-			Foreground(styles.ColorPurple)
+			Foreground(styles.Colors().Primary)
 	}
 	cropedDesc := desc
 	padding := 8

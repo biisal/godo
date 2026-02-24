@@ -10,7 +10,7 @@ import (
 
 type AgentModel struct {
 	PromptInput      textinput.Model
-	StreamChunk      string
+	StreamChunk      strings.Builder
 	ChatViewport     viewport.Model
 	StatusText       string
 	CurrentReasoning strings.Builder

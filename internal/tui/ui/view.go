@@ -15,7 +15,7 @@ func RenderListView(m *TeaModel, maxHeight int) string {
 
 	m.UpdateDescriptionContent()
 	right := styles.TodoDescViewportStyle.Width(m.Width - leftWidth - 1).
-		BorderForeground(styles.ColorDarkGray).
+		BorderForeground(styles.Colors().Border).
 		Height(maxHeight).
 		Render(m.TodoModel.ListModel.DescViewport.View())
 
@@ -58,7 +58,7 @@ func TodoView(m *TeaModel, maxHeight int) string {
 			Render(titleInput.View())
 		inputHeight := lipgloss.Height(inputView)
 
-		idInputView := styles.TodoIdInputStyle.
+		idInputView := styles.TodoIDInputStyle.
 			Width(m.Width).
 			Render(idInput.View())
 		idInputHeight := lipgloss.Height(idInputView)
@@ -72,10 +72,32 @@ func TodoView(m *TeaModel, maxHeight int) string {
 	return s
 }
 
-func AgentView(m *TeaModel, maxHeight int) string {
+func (m *TeaModel) AgentPromtInputView() (string, int) {
+	inputHeight := 5
+	marginX := 4
+	fullInput := lipgloss.JoinVertical(lipgloss.Left, m.AgentModel.PromptInput.View(), lipgloss.NewStyle().MarginTop(2).Render(m.AgentModel.StatusText))
+	inputView := styles.AgentPromptStyle.
+		Width(m.Width - marginX*2).
+		Height(inputHeight - 1).
+		Padding(1).
+		Render(fullInput)
 
-	outerChatIViewHeight := maxHeight * 80 / 100
-	chatstyle := styles.AgentChatViewStyle.Foreground(styles.AgentContentStyle.GetForeground())
+	bottomPart := lipgloss.Place(
+		m.Width,
+		lipgloss.Height(inputView),
+		lipgloss.Center,
+		lipgloss.Bottom,
+		inputView,
+	)
+	return bottomPart, lipgloss.Height(bottomPart)
+}
+
+func AgentView(m *TeaModel, maxHeight int) string {
+	bottomPart, bottomHeight := m.AgentPromtInputView()
+
+	outerChatIViewHeight := maxHeight - bottomHeight
+
+	chatstyle := styles.AgentChatViewStyle.Foreground(styles.Colors().Accent)
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
 	chatWidth := m.Width
@@ -92,9 +114,8 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	}
 
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
-	m.AgentModel.ChatViewport.Style.Foreground(styles.AgentContentStyle.GetForeground())
 	m.AgentModel.ChatViewport.Width = chatWidth - cWidth
-	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), chatWidth-cWidth))
+	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), chatWidth-cWidth-1))
 	chatView := chatstyle.Width(chatWidth).Render(m.AgentModel.ChatViewport.View())
 
 	var combinedView string
@@ -104,45 +125,15 @@ func AgentView(m *TeaModel, maxHeight int) string {
 		combinedView = chatView
 	}
 
-	// Top section
 	topPart := lipgloss.Place(
 		m.Width,
-		outerChatIViewHeight,
+		outerChatIViewHeight-bottomHeight,
 		lipgloss.Left,
 		lipgloss.Top,
 		combinedView,
 	)
 
-	statusText := "Quit: Esc / Ctrl+C"
-	if m.AgentModel.StatusText != "" {
-		statusText = m.AgentModel.StatusText
-	}
-	middleLeft := styles.InstructionStyle.Render(statusText)
-	middleRight := styles.InstructionStyle.Render("Scroll: PageUp / PageDown")
-	middle := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		styles.HalfWidthLeftStyle.Width(m.Width/2).Render(middleLeft),
-		styles.HalfWidthRightStyle.Width(m.Width/2).Render(middleRight),
-	)
-
-	middleHeight := lipgloss.Height(middle)
-	topHeight := lipgloss.Height(topPart)
-
-	inputHeight := maxHeight - topHeight - middleHeight
-	inputView := styles.AgentPromptStyle.
-		Width(m.Width).
-		Height(inputHeight - 1).
-		Render(m.AgentModel.PromptInput.View())
-
-	bottomPart := lipgloss.Place(
-		m.Width,
-		lipgloss.Height(inputView),
-		lipgloss.Left,
-		lipgloss.Bottom,
-		inputView,
-	)
-
-	result := lipgloss.JoinVertical(lipgloss.Top, topPart, middle, bottomPart)
+	result := lipgloss.JoinVertical(lipgloss.Top, topPart, bottomPart)
 
 	totalHeight := lipgloss.Height(result)
 	if totalHeight > maxHeight {
@@ -152,35 +143,6 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	return result
 }
 
-//	func ExitView() string {
-//		timeSpent := time.Since(config.StartTime).Round(time.Second).String()
-//		timeStr := fmt.Sprintf("%v", timeSpent)
-//		totalTodos, completed, remains, err := todoaction.GetTodosInfo()
-//		var s string
-//		if err == nil {
-//			columns := []table.Column{
-//				{
-//					Title: "SUMMURY",
-//					Width: 20,
-//				},
-//				{
-//					Title: "",
-//					Width: 20,
-//				},
-//			}
-//			rows := []table.Row{
-//				{"Time Spent", timeStr},
-//				{"Total Todos", strconv.Itoa(totalTodos)},
-//				{"Completed", strconv.Itoa(completed)},
-//				{"Remains", strconv.Itoa(remains)},
-//			}
-//			t := table.New(table.WithColumns(columns), table.WithRows(rows))
-//			t.SetHeight(5)
-//
-//			s = styles.BoxStyle.Render(t.View()) + "\n\n"
-//		}
-//		return s
-//	}
 func HelpPageView(m *TeaModel, maxHeight int) string {
 	leftHelp := `Help
 
@@ -216,8 +178,8 @@ Press ctrl+u to close`
 	style := lipgloss.NewStyle().
 		Padding(2).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.ColorDarkGray).
-		Foreground(lipgloss.Color("#ffffff")).
+		BorderForeground(styles.Colors().Border).
+		Foreground(styles.Colors().Foreground).
 		Width(m.Width * 40 / 100)
 
 	leftPanel := style.Render(leftHelp)
@@ -229,9 +191,10 @@ Press ctrl+u to close`
 		lipgloss.Center, lipgloss.Center,
 		combined)
 }
+
 func HelpBarView(m *TeaModel) (string, int) {
 	var s string
-	var modeUi strings.Builder
+	var modeUI strings.Builder
 	if m.Choices[m.SelectedIndex].Value == TodoMode.Value {
 		totalChoices := len(m.TodoModel.Choices)
 		for i, choice := range m.TodoModel.Choices {
@@ -240,20 +203,20 @@ func HelpBarView(m *TeaModel) (string, int) {
 				defalutStyles = defalutStyles.MarginRight(1)
 			}
 			if choice.Value == m.TodoModel.Choices[m.TodoModel.SelectedIndex].Value {
-				modeUi.WriteString(defalutStyles.Background(styles.ColorPurple).Render(choice.Label))
+				modeUI.WriteString(defalutStyles.Background(styles.Colors().Primary).Foreground(styles.Colors().PrimaryForeground).Render(choice.Label))
 			} else {
-				modeUi.WriteString(defalutStyles.Render(choice.Label))
+				modeUI.WriteString(defalutStyles.Render(choice.Label))
 			}
 		}
 	}
 	for _, choice := range m.Choices {
 		if choice.Value == m.Choices[m.SelectedIndex].Value {
-			modeUi.WriteString(styles.ModeStyle.Background(styles.ColorPurple).Render(choice.Label))
+			modeUI.WriteString(styles.ModeStyle.Background(styles.Colors().Primary).Foreground(styles.Colors().PrimaryForeground).Render(choice.Label))
 		} else {
-			modeUi.WriteString(styles.ModeStyle.Render(choice.Label))
+			modeUI.WriteString(styles.ModeStyle.Render(choice.Label))
 		}
 	}
-	rightPart := styles.InstructionStyle.AlignHorizontal(lipgloss.Right).Render(modeUi.String())
+	rightPart := styles.InstructionStyle.AlignHorizontal(lipgloss.Right).Render(modeUI.String())
 	rightWidth := lipgloss.Width(rightPart)
 
 	leftPart := styles.InstructionStyle.Width(m.Width - rightWidth).Render("Help: Ctrl+b")
@@ -269,14 +232,18 @@ func (m *TeaModel) BuildAgentTextUI(text string) {
 	switch text {
 	case "START":
 		m.AgentModel.CurrentReasoning.Reset()
+		m.AgentModel.StreamChunk.Reset()
 	case "DONE":
+		if strings.TrimSpace(m.AgentModel.StreamChunk.String()) != "" {
+			m.ChatContent.WriteString((m.AgentModel.StreamChunk.String()))
+		}
 		m.ChatContent.WriteString(marginText)
+		m.AgentModel.StreamChunk.Reset()
 	default:
 		if m.AgentModel.CurrentReasoning.Len() > 0 {
 			m.ChatContent.WriteString(marginText)
 			m.AgentModel.CurrentReasoning.Reset()
 		}
-
 		m.ChatContent.WriteString(text)
 	}
 }
@@ -300,7 +267,7 @@ func (m *TeaModel) RenderChatContentFromHistory() {
 				chatBlocks = append(chatBlocks, styles.ThinkingTokenStyle.Render(msg.Reasoning))
 			}
 			if text != "" {
-				chatBlocks = append(chatBlocks, styles.AgentContentStyle.Render(text))
+				chatBlocks = append(chatBlocks, styles.AgentContentStyle.Width(m.Width).Render(text))
 			}
 		}
 	}
@@ -314,3 +281,24 @@ func (m *TeaModel) RenderChatContentFromHistory() {
 		m.AgentModel.ChatViewport.GotoBottom()
 	}
 }
+
+// func (m *TeaModel) renderAgentMarkdown(text string) string {
+// 	if strings.TrimSpace(text) == "" {
+// 		return text
+// 	}
+//
+// 	renderer, err := glamour.NewTermRenderer(
+// 		glamour.WithAutoStyle(),
+// 		glamour.WithWordWrap(m.Width*70/100),
+// 	)
+// 	if err != nil {
+// 		return styles.AgentContentStyle.Render(text)
+// 	}
+//
+// 	rendered, err := renderer.Render(text)
+// 	if err != nil {
+// 		return styles.AgentContentStyle.Render(text)
+// 	}
+//
+// 	return strings.TrimRight(rendered, "\n")
+// }

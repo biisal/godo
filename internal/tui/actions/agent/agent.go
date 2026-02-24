@@ -62,11 +62,11 @@ func (b *Bot) GetChatHistoryFromDB() (*[]agentModel.Message, error) {
 
 func (b *Bot) AddChatToDB(msg agentModel.Message) error {
 	sqlStmt := "INSERT INTO chats (chat) VALUES (?)"
-	msgJson, err := json.Marshal(msg)
+	msgJSON, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-	_, err = config.Cfg.DB.Exec(sqlStmt, string(msgJson))
+	_, err = config.Cfg.DB.Exec(sqlStmt, string(msgJSON))
 	return err
 }
 
@@ -258,6 +258,9 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 	b.AddChatToDB(userMsg)
 
 	bus.Emit("START")
+	bus.EmitStatus("Processing....")
+
+	defer bus.EmitStatus("Ask again to continue...")
 	refresh, err := b.agentAPICall()
 	if err != nil {
 		return nil, refresh, err
@@ -267,32 +270,8 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 }
 
 func runFunction(funcName string, tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
-	switch funcName {
-	case PerformSqlFunc:
-		return runPerformSql(tc)
-	case RunShellCommandFunc:
-		return runShellCommand(tc)
-	case ReadSkillFunc:
-		return runReadSkill(tc)
-	case GlobSearchFunc:
-		return runGlobSearch(tc)
-	case ReadFilesFunc:
-		return runReadFiles(tc)
-	case ProjectTreeFunc:
-		return runProjectTree(tc)
-	case DuckDuckGoSearchFunc:
-		return runDuckDuckGoSearch(tc)
-	case ScrapePageFunc:
-		return runScrapePage(tc)
-	case WriteFileFunc:
-		return runWriteFile(tc)
-	case EditFileFunc:
-		return runEditFile(tc)
-	case PatchFileFunc:
-		return runPatchFile(tc)
-	case InsertAtLineFunc:
-		return runInsertAtLine(tc)
-	default:
-		return "", false, fmt.Errorf("unknown function: %s", funcName)
+	if fn, ok := tools[funcName]; ok {
+		return fn(tc)
 	}
+	return nil, false, fmt.Errorf("unknown function: %s", funcName)
 }
