@@ -21,7 +21,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var WrongTypeIdError = errors.New("ID Should be a number")
+var ErrWrongTypeID = errors.New("ID Should be a number")
 
 func SetUpDefalutKeys(key string, m *TeaModel) {
 	switch key {
@@ -66,7 +66,7 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 		case 2:
 			id, err := strconv.Atoi(m.TodoModel.EditModel.IdInput.Value())
 			if err != nil {
-				*cmds = append(*cmds, m.ShowError(WrongTypeIdError))
+				*cmds = append(*cmds, m.ShowError(ErrWrongTypeID))
 				return
 			}
 			_, err = todoAction.ModifyTodo(id, m.TodoModel.EditModel.TitleInput.Value(), m.TodoModel.EditModel.DescInput.Value())
@@ -108,11 +108,13 @@ func SetUpFormKey(key string, model *todo.TodoForm, m *TeaModel, cmds *[]tea.Cmd
 
 func SetyUpListKey(key string, m *TeaModel, msg tea.KeyMsg, cmds *[]tea.Cmd) (tea.Model, *tea.Cmd) {
 	switch key {
-	case "enter":
+	case " ":
 		selected := m.TodoModel.ListModel.List.SelectedItem()
 		if selected != nil {
 			id := selected.(todo.Todo).ID
-			todoAction.ToggleDone(id)
+			if _, err := todoAction.ToggleDone(id); err != nil {
+				slog.Error("error toggling done", "id", id, "err", err)
+			}
 			item, err := todoAction.GetTodoById(id)
 			if err != nil {
 				slog.Info("error toggling done", "id", id, "err", err)
@@ -208,6 +210,13 @@ func UpdateOnSize(msg tea.WindowSizeMsg, m *TeaModel) tea.Cmd {
 	m.Height = msg.Height
 	m.RefreshList()
 	m.RenderChatContentFromHistory()
+	m.AgentModel.PromptInput.Width = m.Width
+	secondary := styles.Colors().Secondary
+	m.AgentModel.PromptInput.PromptStyle = m.AgentModel.PromptInput.PromptStyle.Background(secondary)
+	m.AgentModel.PromptInput.TextStyle = m.AgentModel.PromptInput.TextStyle.Background(secondary)
+	m.AgentModel.PromptInput.PlaceholderStyle = m.AgentModel.PromptInput.PlaceholderStyle.Background(secondary)
+	m.AgentModel.PromptInput.CompletionStyle = m.AgentModel.PromptInput.CompletionStyle.Background(secondary)
+	m.AgentModel.PromptInput.Cursor.Style = m.AgentModel.PromptInput.Cursor.Style.Background(secondary)
 	return nil
 }
 
@@ -269,7 +278,9 @@ func (m *TeaModel) ToggleMode() {
 			config.Cfg.MODE = "agent"
 		}
 	}
-	config.SaveCfg()
+	if err := config.SaveCfg(); err != nil {
+		slog.Error("error saving config", "err", err)
+	}
 }
 
 type clearErrorMsg struct{}

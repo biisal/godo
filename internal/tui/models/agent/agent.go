@@ -9,13 +9,11 @@ import (
 )
 
 type AgentModel struct {
-	PromptInput      textinput.Model
-	StreamChunk      strings.Builder
-	ChatViewport     viewport.Model
-	StatusText       string
-	CurrentReasoning strings.Builder
-	ShellViewport    viewport.Model
-	ShellContent     strings.Builder
+	PromptInput   textinput.Model
+	ChatViewport  viewport.Model
+	StatusText    string
+	ShellViewport viewport.Model
+	ShellContent  strings.Builder
 }
 
 const (
@@ -23,6 +21,10 @@ const (
 	AssistantRole = "assistant"
 	SystemRole    = "system"
 	ToolRole      = "tool"
+
+	StatusThinking   = "Thinking..."
+	StatusProcessing = "Processing..."
+	StatusReady      = "Ready"
 )
 
 type Message struct {

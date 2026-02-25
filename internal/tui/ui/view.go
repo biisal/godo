@@ -73,9 +73,9 @@ func TodoView(m *TeaModel, maxHeight int) string {
 }
 
 func (m *TeaModel) AgentPromtInputView() (string, int) {
-	inputHeight := 5
+	inputHeight := 1
 	marginX := 4
-	fullInput := lipgloss.JoinVertical(lipgloss.Left, m.AgentModel.PromptInput.View(), lipgloss.NewStyle().MarginTop(2).Render(m.AgentModel.StatusText))
+	fullInput := lipgloss.JoinVertical(lipgloss.Left, m.AgentModel.PromptInput.View(), lipgloss.NewStyle().Render(m.AgentModel.StatusText))
 	inputView := styles.AgentPromptStyle.
 		Width(m.Width - marginX*2).
 		Height(inputHeight - 1).
@@ -115,7 +115,11 @@ func AgentView(m *TeaModel, maxHeight int) string {
 
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 	m.AgentModel.ChatViewport.Width = chatWidth - cWidth
-	m.AgentModel.ChatViewport.SetContent(wordwrap.String(m.ChatContent.String(), chatWidth-cWidth-1))
+	content := m.ChatContent.String()
+	if m.ThinkContent.Len() > 0 {
+		content += styles.ThinkingTokenStyle.Render(m.ThinkContent.String())
+	}
+	m.AgentModel.ChatViewport.SetContent(wordwrap.String(content, chatWidth-cWidth-1))
 	chatView := chatstyle.Width(chatWidth).Render(m.AgentModel.ChatViewport.View())
 
 	var combinedView string
@@ -127,7 +131,7 @@ func AgentView(m *TeaModel, maxHeight int) string {
 
 	topPart := lipgloss.Place(
 		m.Width,
-		outerChatIViewHeight-bottomHeight,
+		outerChatIViewHeight,
 		lipgloss.Left,
 		lipgloss.Top,
 		combinedView,
@@ -225,24 +229,21 @@ func HelpBarView(m *TeaModel) (string, int) {
 	return s, lipgloss.Height(s)
 }
 
-func (m *TeaModel) BuildAgentTextUI(text string) {
+func (m *TeaModel) BuildAgentTextUI(text string, msgType string) {
 	defer m.AgentModel.ChatViewport.GotoBottom()
-	marginText := lipgloss.NewStyle().MarginBottom(1).Render()
-
-	switch text {
-	case "START":
-		m.AgentModel.CurrentReasoning.Reset()
-		m.AgentModel.StreamChunk.Reset()
-	case "DONE":
-		if strings.TrimSpace(m.AgentModel.StreamChunk.String()) != "" {
-			m.ChatContent.WriteString((m.AgentModel.StreamChunk.String()))
+	switch msgType {
+	case "stream_start":
+		m.ThinkContent.Reset()
+	case "stream_end":
+		if m.ThinkContent.Len() > 0 {
+			m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(m.ThinkContent.String()))
+			m.ThinkContent.Reset()
 		}
-		m.ChatContent.WriteString(marginText)
-		m.AgentModel.StreamChunk.Reset()
+		m.ChatContent.WriteString(lipgloss.NewStyle().MarginBottom(1).Render())
 	default:
-		if m.AgentModel.CurrentReasoning.Len() > 0 {
-			m.ChatContent.WriteString(marginText)
-			m.AgentModel.CurrentReasoning.Reset()
+		if m.ThinkContent.Len() > 0 {
+			m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(m.ThinkContent.String()))
+			m.ThinkContent.Reset()
 		}
 		m.ChatContent.WriteString(text)
 	}
@@ -250,9 +251,7 @@ func (m *TeaModel) BuildAgentTextUI(text string) {
 
 func (m *TeaModel) BuildThinkingTextUI(text string) {
 	defer m.AgentModel.ChatViewport.GotoBottom()
-	m.AgentModel.CurrentReasoning.WriteString(text)
-
-	m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(text))
+	m.ThinkContent.WriteString(text)
 }
 
 func (m *TeaModel) RenderChatContentFromHistory() {

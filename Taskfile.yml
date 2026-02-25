@@ -4,7 +4,7 @@ tasks:
   build:
     desc: Build the Go application
     cmds:
-      - go build -o godo cmd/godo/main.go
+      - go build -o bin/godo cmd/godo/main.go
 
   build:dist:
     desc: Build for distribution
@@ -39,7 +39,7 @@ tasks:
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -f godo
+      - rm -rf bin/
       - rm -rf dist/
 
   install:

@@ -43,6 +43,7 @@ type TeaModel struct {
 	Theme         styles.Theme
 	BgStyle       lipgloss.Style
 	ChatContent   strings.Builder
+	ThinkContent  strings.Builder
 	AgentBot      *agent.Bot
 }
 
@@ -133,7 +134,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case bus.StreamMsg:
 		if msg.IsUser {
-			m.ChatContent.WriteString(styles.UserContentStyle.Width(m.Width).Render(msg.Text) + "\n")
+			m.ChatContent.WriteString(styles.UserContentStyle.Width(m.Width).Render(msg.Text))
 			return m, nil
 		}
 		switch msg.Type {
@@ -147,7 +148,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.AgentModel.ShellViewport.SetContent(styles.ShellOutputStyle.Render(m.AgentModel.ShellContent.String()))
 			m.AgentModel.ShellViewport.GotoBottom()
 		default:
-			m.BuildAgentTextUI(msg.Text)
+			m.BuildAgentTextUI(msg.Text, msg.Type)
 		}
 		return m, nil
 	case clearErrorMsg:

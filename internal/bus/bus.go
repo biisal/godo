@@ -12,11 +12,6 @@ type StreamMsg struct {
 // StreamResponse is the channel used to communicate between the agent and the TUI.
 var StreamResponse = make(chan StreamMsg)
 
-// Emit sends a generic stream message.
-func Emit(text string) {
-	StreamResponse <- StreamMsg{Text: text}
-}
-
 // EmitStatus sends a status bar update (e.g. "Thinking...").
 func EmitStatus(text string) {
 	StreamResponse <- StreamMsg{Text: text, Type: "status"}
@@ -35,6 +30,16 @@ func EmitContent(text string) {
 // EmitUser sends a user message for display.
 func EmitUser(text string) {
 	StreamResponse <- StreamMsg{Text: text, IsUser: true}
+}
+
+// EmitStreamStart signals the beginning of a new agent response stream.
+func EmitStreamStart() {
+	StreamResponse <- StreamMsg{Type: "stream_start"}
+}
+
+// EmitStreamEnd signals the end of an agent response stream.
+func EmitStreamEnd() {
+	StreamResponse <- StreamMsg{Type: "stream_end"}
 }
 
 // EmitToolCall sends a status for an active tool call.

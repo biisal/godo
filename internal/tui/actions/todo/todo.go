@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrorEmpty     = errors.New("Title or Description can't be empty")
-	ErrorInvalidId = errors.New("Invalid ID")
+	ErrorEmpty     = errors.New("title or description can't be empty")
+	ErrorInvalidId = errors.New("invalid ID")
 )
 
 func GetTodos() ([]todo.Todo, error) {
@@ -27,7 +27,11 @@ func GetTodos() ([]todo.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("error closing rows", "err", err)
+		}
+	}()
 	todos := []todo.Todo{}
 	for rows.Next() {
 		var t todo.Todo
@@ -59,7 +63,6 @@ func AddTodo(title, description string) ([]todo.Todo, error) {
 		return nil, err
 	}
 	return GetTodos()
-
 }
 
 func DeleteTodo(id int) ([]todo.Todo, error) {
@@ -117,7 +120,6 @@ func GetTodosInfo() (int, int, int, error) {
 }
 
 func GetTodoById(id int) (*todo.Todo, error) {
-
 	sqlStmt := `
 	SELECT Id , Title, Description, Done
 	FROM todos
@@ -139,7 +141,11 @@ func PerformSqlQuery(sqlStmt string) (string, error) {
 	if rows == nil {
 		return "[]", nil
 	}
-	defer rows.Close()
+	defer func() {
+		if err = rows.Close(); err != nil {
+			slog.Error("error closing rows", "err", err)
+		}
+	}()
 
 	cols, err := rows.Columns()
 	if err != nil {

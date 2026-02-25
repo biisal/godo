@@ -43,7 +43,11 @@ func (b *Bot) GetChatHistoryFromDB() (*[]agentModel.Message, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query chats: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("error closing rows", "err", err)
+		}
+	}()
 
 	var history []agentModel.Message
 	for rows.Next() {
@@ -136,7 +140,9 @@ func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
 		return ""
 	}
 	var r string
-	json.Unmarshal([]byte(f.Raw()), &r)
+	if err := json.Unmarshal([]byte(f.Raw()), &r); err != nil {
+		slog.Error("failed to unmarshal reasoning", "err", err)
+	}
 	return r
 }
 
@@ -161,21 +167,28 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		}, option.WithJSONSet("think", true))
 
 		acc := openai.ChatCompletionAccumulator{}
-		bus.EmitStatus("Thinking...")
+		bus.EmitStatus(agentModel.StatusThinking)
 		var reasoningBuilder strings.Builder
+
+		thiking := true
 
 		for stream.Next() {
 			chunk := stream.Current()
+			raw, _ := json.Marshal(chunk)
+			slog.Debug("Raw chunk received", "json", string(raw))
 			acc.AddChunk(chunk)
 
 			for _, choice := range chunk.Choices {
 				if r := deltaReasoning(choice.Delta); r != "" {
 					reasoningBuilder.WriteString(r)
 					bus.EmitThinking(r)
+					continue
 				}
-				if content := choice.Delta.Content; content != "" {
-					bus.EmitContent(content)
+				if thiking {
+					bus.EmitStatus("no more thinking..")
+					thiking = false
 				}
+				bus.EmitContent(choice.Delta.Content)
 			}
 		}
 		cancel()
@@ -198,7 +211,7 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 			}
 			if txt := strings.TrimSpace(choice.Message.Content); txt != "" {
 				assistantMsg.Content = txt
-				bus.Emit("")
+				bus.EmitContent("")
 			}
 			assistantMsg.Reasoning = reasoningBuilder.String()
 			b.appendMessage(assistantMsg)
@@ -240,7 +253,9 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 				Content:   finalText,
 			}
 			b.appendMessage(msg)
-			b.AddChatToDB(msg)
+			if err := b.AddChatToDB(msg); err != nil {
+				slog.Error("error saving chat to db", "err", err)
+			}
 		}
 
 		return isRefresh, nil
@@ -255,9 +270,11 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 		Content: prompt,
 	}
 	b.History = append(b.History, userMsg)
-	b.AddChatToDB(userMsg)
+	if err := b.AddChatToDB(userMsg); err != nil {
+		slog.Error("error saving chat to db", "err", err)
+	}
 
-	bus.Emit("START")
+	bus.EmitStreamStart()
 	bus.EmitStatus("Processing....")
 
 	defer bus.EmitStatus("Ask again to continue...")
@@ -265,7 +282,7 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 	if err != nil {
 		return nil, refresh, err
 	}
-	bus.Emit("DONE")
+	bus.EmitStreamEnd()
 	return b.History, refresh, nil
 }
 

@@ -44,9 +44,7 @@ func NewContextBuilder() *ContextBuilder {
 		slog.Warn("Could not determine user home directory, falling back to current directory", "err", err)
 		homeDir = baseDir
 	}
-	var identityDir string
-
-	identityDir = filepath.Join(homeDir, config.AppDIR, "content", "identity")
+	identityDir := filepath.Join(homeDir, config.AppDIR, "content", "identity")
 
 	return &ContextBuilder{
 		skillsLoader: NewFileSkillsLoader(filepath.Join(homeDir, config.AppDIR, "content")), // resolves to homeDir/.godo/content/skills

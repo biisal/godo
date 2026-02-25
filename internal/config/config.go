@@ -47,21 +47,20 @@ func loadEnv(paths []string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("No env file found, Checked : %s", strings.Join(slices.Compact(paths), ", "))
+	return fmt.Errorf("no env file found, checked: %s", strings.Join(slices.Compact(paths), ", "))
 }
 
 func MustLoad() error {
 	var err error
 	HomeDIR, err = os.UserHomeDir()
-
 	if err != nil {
-		return fmt.Errorf("Failed to get user home directory for writing logs and todos: %s", err.Error())
+		return fmt.Errorf("failed to get user home directory for writing logs and todos: %s", err.Error())
 	}
 	if err = os.MkdirAll(HomeDIR+AppDIR, os.ModePerm); err != nil {
 		return err
 	}
 
-	loadEnv([]string{"./.env", filepath.Join(HomeDIR, AppDIR, ".env")})
+	_ = loadEnv([]string{"./.env", filepath.Join(HomeDIR, AppDIR, ".env")})
 
 	if err = cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
@@ -94,7 +93,7 @@ func MustLoad() error {
 		}
 		Cfg.DB_PATH = HomeDIR + AppDIR + Cfg.DB_NAME
 	}
-	if err := SaveCfg(); err != nil {
+	if err = SaveCfg(); err != nil {
 		return err
 	}
 	if err = initDb(); err != nil {
@@ -109,9 +108,11 @@ func SaveCfg() error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
-	var content string = ""
+	content := ""
 	content += "OPENAI_API_KEY=" + Cfg.OPENAI_API_KEY + "\n"
 	content += "OPENAI_MODEL=" + Cfg.OPENAI_MODEL + "\n"
 	content += "OPENAI_BASE_URL=" + Cfg.OPENAI_BASE_URL + "\n"
@@ -156,7 +157,7 @@ func getApiKey() error {
 	if Cfg.OPENAI_API_KEY == "" {
 		fmt.Println("Enter your OpenAI API key (or compatible API key):")
 		input := ""
-		fmt.Scanln(&input)
+		_, _ = fmt.Scanln(&input)
 		Cfg.OPENAI_API_KEY = input
 		if err := SaveCfg(); err != nil {
 			return err

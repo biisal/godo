@@ -88,5 +88,5 @@ func (d CustomDelegate) Render(w io.Writer, m list.Model, index int, listItem li
 		cropedDesc = desc[:d.Width-padding] + "..."
 	}
 	row := rowStyle.Render(fmt.Sprintf("%s\n%s", title, cropedDesc))
-	fmt.Fprint(w, row)
+	_, _ = fmt.Fprint(w, row)
 }

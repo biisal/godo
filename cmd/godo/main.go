@@ -23,14 +23,18 @@ func main() {
 	defer closeLog()
 
 	slog.Info("Starting GODO-AGENT")
-	slog.Info("isDarkTheme", "darkmode" , termenv.HasDarkBackground())
+	slog.Info("isDarkTheme", "darkmode", termenv.HasDarkBackground())
 
 	if err := config.MustLoad(); err != nil {
 		slog.Error("Error loading config", "err", err)
 		fmt.Printf("Failed To Load Config: %v\n", err)
 		os.Exit(1)
 	}
-	defer config.Cfg.DB.Close()
+	defer func() {
+		if err = config.Cfg.DB.Close(); err != nil {
+			slog.Error("error closing db", "err", err)
+		}
+	}()
 
 	bot := agent.NewBot()
 

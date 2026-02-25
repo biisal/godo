@@ -4,3 +4,4 @@ tmp_build
 .gitignore
 dist
 VERSION
+bin

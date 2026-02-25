@@ -147,7 +147,6 @@ var (
 
 	InstructionStyle = lipgloss.NewStyle().
 				Padding(0, 1).
-				Background(colors.Muted).
 				Foreground(colors.MutedForeground)
 
 	ErrorInChatStyle = lipgloss.NewStyle().
