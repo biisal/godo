@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/biisal/godo/internal/logger"
 	"github.com/creativeprojects/go-selfupdate"
@@ -27,17 +26,18 @@ func runAutoUpdate(cmd string, currentVersion string, disableAutoUpdate bool) er
 
 	latest, err := selfupdate.UpdateSelf(context.Background(), currentVersion, repo)
 	if err != nil {
-		return fmt.Errorf("error occurred while updating binary: %w", err)
+		logger.Error("Error checking for updates: %v", err)
+		return nil // Don't fail the app if update check fails
 	}
 
 	if latest.Version() == currentVersion {
-		logger.Success("Already on the latest version (%s)", color.HiGreenString(currentVersion))
+		logger.Success("Already on the latest version (%s)", latest.Version())
 		return nil
 	}
 
-	logger.Success("Successfully updated to version %s", color.HiGreenString(latest.Version()))
-	color.Cyan("Please run %s to restart", cmd)
-	os.Exit(0)
+	logger.Success("Updated from %s to %s", currentVersion, latest.Version())
+	_ = cmd // cmd parameter reserved for future use
+	color.Cyan("Please restart the application to use the new version")
 	return nil
 }
 

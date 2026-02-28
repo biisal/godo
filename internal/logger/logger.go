@@ -29,3 +29,7 @@ func Info(format string, args ...interface{}) {
 func Success(format string, args ...interface{}) {
 	color.Green(fmt.Sprintf(format, args...))
 }
+
+func Error(format string, args ...interface{}) {
+	color.Red(fmt.Sprintf(format, args...))
+}
