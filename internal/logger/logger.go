@@ -1,9 +1,12 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
+
+	"github.com/fatih/color"
 )
 
 func Init(filePath string, level slog.Level) (func(), error) {
@@ -17,4 +20,12 @@ func Init(filePath string, level slog.Level) (func(), error) {
 	})
 	slog.SetDefault(slog.New(h))
 	return func() { _ = f.Close() }, nil
+}
+
+func Info(format string, args ...interface{}) {
+	slog.Info(fmt.Sprintf(format, args...))
+}
+
+func Success(format string, args ...interface{}) {
+	color.Green(fmt.Sprintf(format, args...))
 }

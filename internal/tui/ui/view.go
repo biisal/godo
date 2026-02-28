@@ -105,17 +105,17 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	cWidth, cHeight := chatstyle.GetFrameSize()
 
 	chatWidth := m.Width
-	var shellPanel string
-	if m.AgentModel.ShellContent.Len() > 0 {
-		chatWidth = m.Width * 60 / 100
-		shellWidth := m.Width - chatWidth - 2
-		m.AgentModel.ShellViewport.Width = shellWidth
-		m.AgentModel.ShellViewport.Height = outerChatIViewHeight - 2
-		shellPanel = styles.ShellSidePanelStyle.
-			Width(shellWidth).
-			Height(outerChatIViewHeight - 2).
-			Render(m.AgentModel.ShellViewport.View())
-	}
+	// var shellPanel string
+	// if m.AgentModel.ShellContent.Len() > 0 {
+	// 	chatWidth = m.Width * 60 / 100
+	// 	shellWidth := m.Width - chatWidth - 2
+	// 	m.AgentModel.ShellViewport.Width = shellWidth
+	// 	m.AgentModel.ShellViewport.Height = outerChatIViewHeight - 2
+	// 	shellPanel = styles.ShellSidePanelStyle.
+	// 		Width(shellWidth).
+	// 		Height(outerChatIViewHeight - 2).
+	// 		Render(m.AgentModel.ShellViewport.View())
+	// }
 
 	m.AgentModel.ChatViewport.Height = outerChatIViewHeight - cHeight
 	m.AgentModel.ChatViewport.Width = chatWidth - cWidth
@@ -126,12 +126,13 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	m.AgentModel.ChatViewport.SetContent(wordwrap.String(content, chatWidth-cWidth-1))
 	chatView := chatstyle.Width(chatWidth).Render(m.AgentModel.ChatViewport.View())
 
-	var combinedView string
-	if shellPanel != "" {
-		combinedView = lipgloss.JoinHorizontal(lipgloss.Top, chatView, shellPanel)
-	} else {
-		combinedView = chatView
-	}
+	// var combinedView string
+	// if shellPanel != "" {
+	// 	combinedView = lipgloss.JoinHorizontal(lipgloss.Top, chatView, shellPanel)
+	// } else {
+	// 	combinedView = chatView
+	// }
+	combinedView := chatView
 
 	topPart := lipgloss.Place(
 		m.Width,

@@ -25,7 +25,7 @@ const (
 	StateThinking   = "Thinking..."
 	StateProcessing = "Preparing request..."
 	StateWriting    = "Generating response..."
-	StateReady      = ""
+	StateReady      = "Responding..."
 	StateIdle       = "Ready — ask anything to continue"
 )
 

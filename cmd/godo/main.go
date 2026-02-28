@@ -14,7 +14,17 @@ import (
 	"github.com/muesli/termenv"
 )
 
+var version = "dev"
+
 func main() {
+	command := os.Args[0]
+
+	// Check for update flag
+	disableAutoUpdate := os.Getenv("DISABLE_AUTO_UPDATE") == "true"
+
+	if err := runAutoUpdate(command, version, disableAutoUpdate); err != nil {
+		slog.Error("Auto-update error", "err", err)
+	}
 	closeLog, err := logger.Init("logs.log", slog.LevelDebug)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to open log file: %v\n", err)
