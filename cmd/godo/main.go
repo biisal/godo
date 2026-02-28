@@ -25,7 +25,7 @@ func main() {
 	slog.Info("Starting GODO-AGENT")
 	slog.Info("isDarkTheme", "darkmode", termenv.HasDarkBackground())
 
-	if err := config.MustLoad(); err != nil {
+	if err = config.MustLoad(); err != nil {
 		slog.Error("Error loading config", "err", err)
 		fmt.Printf("Failed To Load Config: %v\n", err)
 		os.Exit(1)
@@ -55,7 +55,7 @@ func main() {
 
 	go func() {
 		for msg := range bus.StreamResponse {
-			p.Send(bus.StreamMsg{Text: msg.Text, IsUser: msg.IsUser, Type: msg.Type})
+			p.Send(msg)
 		}
 	}()
 

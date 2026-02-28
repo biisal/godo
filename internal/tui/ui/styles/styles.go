@@ -24,6 +24,7 @@ type ThemeColors struct {
 	PrimaryForeground   lipgloss.TerminalColor
 	SecondaryForeground lipgloss.TerminalColor
 	AccentForeground    lipgloss.TerminalColor
+	Status              lipgloss.TerminalColor
 }
 
 var (
@@ -45,6 +46,7 @@ var (
 		PrimaryForeground:   lipgloss.NoColor{},
 		SecondaryForeground: lipgloss.NoColor{},
 		AccentForeground:    lipgloss.NoColor{},
+		Status:              lipgloss.Color("6"),
 	}
 	darkTheme = ThemeColors{
 		Background:          lipgloss.NoColor{},
@@ -64,6 +66,7 @@ var (
 		PrimaryForeground:   lipgloss.NoColor{},
 		SecondaryForeground: lipgloss.NoColor{},
 		AccentForeground:    lipgloss.NoColor{},
+		Status:              lipgloss.Color("14"),
 	}
 	colors = ThemeBuilder()
 )
@@ -89,6 +92,8 @@ var (
 			BorderRight(true).
 			BorderBottom(false).
 			BorderTop(false)
+
+	StatusOutputStyle = lipgloss.NewStyle().Foreground(colors.Status).MarginBottom(1)
 
 	PrimaryStyle = lipgloss.NewStyle().
 			Foreground(colors.Primary)
@@ -146,7 +151,6 @@ var (
 				BorderTop(false)
 
 	InstructionStyle = lipgloss.NewStyle().
-				Padding(0, 1).
 				Foreground(colors.MutedForeground)
 
 	ErrorInChatStyle = lipgloss.NewStyle().

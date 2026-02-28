@@ -11,7 +11,7 @@ import (
 type AgentModel struct {
 	PromptInput   textinput.Model
 	ChatViewport  viewport.Model
-	StatusText    string
+	StateText     string
 	ShellViewport viewport.Model
 	ShellContent  strings.Builder
 }
@@ -22,9 +22,11 @@ const (
 	SystemRole    = "system"
 	ToolRole      = "tool"
 
-	StatusThinking   = "Thinking..."
-	StatusProcessing = "Processing..."
-	StatusReady      = "Ready"
+	StateThinking   = "Thinking..."
+	StateProcessing = "Preparing request..."
+	StateWriting    = "Generating response..."
+	StateReady      = ""
+	StateIdle       = "Ready — ask anything to continue"
 )
 
 type Message struct {

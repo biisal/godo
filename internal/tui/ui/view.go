@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/biisal/godo/internal/config"
 	"github.com/biisal/godo/internal/tui/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/wordwrap"
@@ -75,7 +76,10 @@ func TodoView(m *TeaModel, maxHeight int) string {
 func (m *TeaModel) AgentPromtInputView() (string, int) {
 	inputHeight := 1
 	marginX := 4
-	fullInput := lipgloss.JoinVertical(lipgloss.Left, m.AgentModel.PromptInput.View(), lipgloss.NewStyle().Render(m.AgentModel.StatusText))
+	s := styles.InstructionStyle.Foreground(styles.Colors().Accent).Background(styles.Colors().Secondary).Render(config.Cfg.OPENAI_MODEL)
+	s += lipgloss.NewStyle().Background(styles.Colors().Secondary).Render(" " + m.AgentModel.StateText)
+
+	fullInput := lipgloss.JoinVertical(lipgloss.Left, m.AgentModel.PromptInput.View(), s)
 	inputView := styles.AgentPromptStyle.
 		Width(m.Width - marginX*2).
 		Height(inputHeight - 1).
@@ -240,6 +244,17 @@ func (m *TeaModel) BuildAgentTextUI(text string, msgType string) {
 			m.ThinkContent.Reset()
 		}
 		m.ChatContent.WriteString(lipgloss.NewStyle().MarginBottom(1).Render())
+	case "thinking":
+		m.ThinkContent.WriteString(text)
+	case "messageStatus":
+		if m.ThinkContent.Len() > 0 {
+			m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(m.ThinkContent.String()))
+			m.ThinkContent.Reset()
+		}
+		m.ChatContent.WriteString(styles.StatusOutputStyle.Render(text) + "\n")
+		slog.Debug("CHAT CONTENT", "content", map[string]any{
+			"fullContent": m.ChatContent.String(),
+		})
 	default:
 		if m.ThinkContent.Len() > 0 {
 			m.ChatContent.WriteString(styles.ThinkingTokenStyle.Render(m.ThinkContent.String()))
@@ -247,11 +262,6 @@ func (m *TeaModel) BuildAgentTextUI(text string, msgType string) {
 		}
 		m.ChatContent.WriteString(text)
 	}
-}
-
-func (m *TeaModel) BuildThinkingTextUI(text string) {
-	defer m.AgentModel.ChatViewport.GotoBottom()
-	m.ThinkContent.WriteString(text)
 }
 
 func (m *TeaModel) RenderChatContentFromHistory() {

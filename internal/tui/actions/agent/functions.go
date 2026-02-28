@@ -171,7 +171,8 @@ Use this to quickly inspect folder/file structure.`),
 			Function: shared.FunctionDefinitionParam{
 				Name: DuckDuckGoSearchFunc,
 				Description: openai.String(`Search DuckDuckGo by POSTing a query and return ranked results.
-Returns a list of results with title, URL, and description/snippet.`),
+Returns a list of results with title, URL, and description/snippet.
+Use the page parameter to paginate through results for deeper searches.`),
 				Parameters: shared.FunctionParameters{
 					"type": "object",
 					"properties": map[string]any{
@@ -182,6 +183,10 @@ Returns a list of results with title, URL, and description/snippet.`),
 						"maxResults": map[string]any{
 							"type":        "integer",
 							"description": "Optional maximum number of results. Defaults to 10.",
+						},
+						"page": map[string]any{
+							"type":        "integer",
+							"description": "Page number for pagination (1-indexed). Defaults to 1. Use higher values to get more results beyond the first page.",
 						},
 					},
 					"required": []string{"query"},

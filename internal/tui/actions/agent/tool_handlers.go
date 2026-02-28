@@ -675,6 +675,7 @@ func runDuckDuckGoSearch(tc openai.ChatCompletionMessageToolCall) (any, bool, er
 	var args struct {
 		Query      string `json:"query"`
 		MaxResults int    `json:"maxResults"`
+		Page       int    `json:"page"`
 	}
 	if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
 		return "", false, fmt.Errorf("invalid tool arguments: %w", err)
@@ -688,6 +689,12 @@ func runDuckDuckGoSearch(tc openai.ChatCompletionMessageToolCall) (any, bool, er
 	}
 	if args.MaxResults > 50 {
 		args.MaxResults = 50
+	}
+	if args.Page <= 0 {
+		args.Page = 1
+	}
+	if args.Page > 20 {
+		args.Page = 20
 	}
 
 	c := colly.NewCollector(
@@ -725,10 +732,16 @@ func runDuckDuckGoSearch(tc openai.ChatCompletionMessageToolCall) (any, bool, er
 		})
 	})
 
-	err := c.Post("https://html.duckduckgo.com/html/", map[string]string{
+	formData := map[string]string{
 		"q":  args.Query,
 		"kl": "us-en",
-	})
+	}
+	if args.Page > 1 {
+		offset := (args.Page - 1) * 30
+		formData["s"] = fmt.Sprintf("%d", offset)
+		formData["dc"] = fmt.Sprintf("%d", offset+1)
+	}
+	err := c.Post("https://html.duckduckgo.com/html/", formData)
 	if err != nil {
 		return "", false, fmt.Errorf("duckduckgo request failed: %w", err)
 	}
@@ -738,6 +751,7 @@ func runDuckDuckGoSearch(tc openai.ChatCompletionMessageToolCall) (any, bool, er
 
 	return map[string]any{
 		"query":      args.Query,
+		"page":       args.Page,
 		"count":      len(results),
 		"results":    results,
 		"statusCode": statusCode,

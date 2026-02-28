@@ -189,6 +189,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			slog.Debug("User Message Details", "Prompt", map[string]any{"promptInput": promtInput})
 			bus.EmitUser(promtInput)
 			return m, tea.Cmd(func() tea.Msg {
 				_, refresh, err := m.AgentBot.AgentResponse(promtInput)

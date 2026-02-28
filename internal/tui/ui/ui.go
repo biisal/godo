@@ -133,16 +133,13 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case bus.StreamMsg:
-		if msg.IsUser {
+		switch msg.Type {
+		case "user":
 			m.ChatContent.WriteString(styles.UserContentStyle.Width(m.Width).Render(msg.Text))
 			return m, nil
-		}
-		switch msg.Type {
 		case "status":
-			m.AgentModel.StatusText = msg.Text
+			m.AgentModel.StateText = msg.Text
 			return m, nil
-		case "thinking":
-			m.BuildThinkingTextUI(msg.Text)
 		case "shell":
 			m.AgentModel.ShellContent.WriteString(msg.Text)
 			m.AgentModel.ShellViewport.SetContent(styles.ShellOutputStyle.Render(m.AgentModel.ShellContent.String()))

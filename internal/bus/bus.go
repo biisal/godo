@@ -4,17 +4,20 @@ import "fmt"
 
 // StreamMsg represents a message sent through the event bus to the TUI.
 type StreamMsg struct {
-	Text   string
-	IsUser bool
-	Type   string
+	Text string
+	Type string
 }
 
 // StreamResponse is the channel used to communicate between the agent and the TUI.
 var StreamResponse = make(chan StreamMsg)
 
-// EmitStatus sends a status bar update (e.g. "Thinking...").
-func EmitStatus(text string) {
+// EmitState sends a status bar update (e.g. "Thinking...").
+func EmitState(text string) {
 	StreamResponse <- StreamMsg{Text: text, Type: "status"}
+}
+
+func EmitMessageStatus(text string) {
+	StreamResponse <- StreamMsg{Text: text, Type: "messageStatus"}
 }
 
 // EmitThinking sends streamed reasoning text.
@@ -29,7 +32,7 @@ func EmitContent(text string) {
 
 // EmitUser sends a user message for display.
 func EmitUser(text string) {
-	StreamResponse <- StreamMsg{Text: text, IsUser: true}
+	StreamResponse <- StreamMsg{Text: text, Type: "user"}
 }
 
 // EmitStreamStart signals the beginning of a new agent response stream.
@@ -44,7 +47,7 @@ func EmitStreamEnd() {
 
 // EmitToolCall sends a status for an active tool call.
 func EmitToolCall(name string) {
-	EmitStatus(toolStatusMessage(name))
+	EmitState(toolStatusMessage(name))
 }
 
 func toolStatusMessage(name string) string {

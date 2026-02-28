@@ -22,6 +22,7 @@ type Bot struct {
 	client       *openai.Client
 	tools        []openai.ChatCompletionToolParam
 	systemPrompt string
+	ModelName    string
 }
 
 func NewBot() *Bot {
@@ -151,11 +152,7 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 	if len(refresh) > 0 {
 		isRefresh = refresh[0]
 	}
-
-	startTime := time.Now()
-	slog.Info("Running initOAIMessages", "time", startTime)
 	b.initOAIMessages()
-	slog.Info("Finished initOAIMessages", "time taken", time.Since(startTime))
 
 	for range maxToolSteps {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -167,11 +164,11 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		}, option.WithJSONSet("think", true))
 
 		acc := openai.ChatCompletionAccumulator{}
-		bus.EmitStatus(agentModel.StatusThinking)
+		bus.EmitState(agentModel.StateThinking)
 		var reasoningBuilder strings.Builder
-
 		thiking := true
 
+		thinkStartTime := time.Now()
 		for stream.Next() {
 			chunk := stream.Current()
 			raw, _ := json.Marshal(chunk)
@@ -182,10 +179,13 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 				if r := deltaReasoning(choice.Delta); r != "" {
 					reasoningBuilder.WriteString(r)
 					bus.EmitThinking(r)
-					continue
+					if choice.Delta.Content == "" {
+						continue
+					}
 				}
 				if thiking {
-					bus.EmitStatus("no more thinking..")
+					bus.EmitState(agentModel.StateReady)
+					bus.EmitMessageStatus(fmt.Sprintf("\nThought for %.1fs", time.Since(thinkStartTime).Seconds()))
 					thiking = false
 				}
 				bus.EmitContent(choice.Delta.Content)
@@ -265,6 +265,9 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 }
 
 func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
+	if prompt == "" {
+		return nil, false, fmt.Errorf("empty message not allowd")
+	}
 	userMsg := agentModel.Message{
 		Role:    agentModel.UserRole,
 		Content: prompt,
@@ -275,9 +278,9 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 	}
 
 	bus.EmitStreamStart()
-	bus.EmitStatus("Processing....")
+	bus.EmitState(agentModel.StateProcessing)
 
-	defer bus.EmitStatus("Ask again to continue...")
+	defer bus.EmitState(agentModel.StateIdle)
 	refresh, err := b.agentAPICall()
 	if err != nil {
 		return nil, refresh, err
