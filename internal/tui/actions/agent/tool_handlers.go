@@ -842,7 +842,7 @@ func runScrapePage(tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
 	if finalURL != "" && finalURL != args.URL {
 		out.WriteString("FinalURL: " + finalURL + "\n")
 	}
-	out.WriteString(fmt.Sprintf("StatusCode: %d\n", statusCode))
+	fmt.Fprintf(&out, "StatusCode: %d\n", statusCode)
 	if title != "" {
 		out.WriteString("Title: " + title + "\n")
 	}
