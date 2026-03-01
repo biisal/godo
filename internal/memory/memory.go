@@ -3,6 +3,7 @@ package memory
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -60,7 +61,11 @@ func (m *MemoryStore) GetAll() ([]MemoryEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Error closing rows on getall memory", "error", err)
+		}
+	}()
 
 	var entries []MemoryEntry
 	for rows.Next() {
@@ -88,7 +93,11 @@ func (m *MemoryStore) Search(query string) ([]MemoryEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Error closing rows on searching memory", "error", err)
+		}
+	}()
 
 	var entries []MemoryEntry
 	for rows.Next() {
@@ -104,6 +113,9 @@ func (m *MemoryStore) Search(query string) ([]MemoryEntry, error) {
 // GetMemoryContext implements the builder.Memory interface.
 // Returns all memories formatted for injection into the system prompt.
 func (m *MemoryStore) GetMemoryContext() string {
+	if m.db == nil {
+		return ""
+	}
 	entries, err := m.GetAll()
 	if err != nil || len(entries) == 0 {
 		return ""
