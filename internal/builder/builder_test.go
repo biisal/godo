@@ -35,7 +35,6 @@ func TestGetIdentity(t *testing.T) {
 		t.Error("Identity should not be empty")
 	}
 
-	// Check that identity contains expected content
 	expected := "You are the AI assistant inside the GoDo CLI app"
 	if len(identity) < len(expected) {
 		t.Error("Identity seems too short")
@@ -45,15 +44,12 @@ func TestGetIdentity(t *testing.T) {
 func TestLoadBootstrapFiles(t *testing.T) {
 	cb := NewContextBuilder()
 
-	// Test with existing files
 	content := cb.LoadBootstrapFiles()
-	// The content may be empty if files don't exist in test environment
-	// but it shouldn't panic
 	_ = content
 }
 
 func TestLoadBootstrapFilesWithMockFiles(t *testing.T) {
-	// Create a temporary directory with mock identity files
+
 	tmpDir := t.TempDir()
 	identityDir := filepath.Join(tmpDir, "identity")
 
@@ -62,7 +58,6 @@ func TestLoadBootstrapFilesWithMockFiles(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Write test files
 	files := map[string]string{
 		"SOUL.md":     "This is the soul content",
 		"AGENT.md":    "This is the agent content",
@@ -79,7 +74,6 @@ func TestLoadBootstrapFilesWithMockFiles(t *testing.T) {
 		}
 	}
 
-	// Create a context builder with the temp directory
 	cb := &ContextBuilder{
 		skillsLoader: &DummySkillsLoader{},
 		memory:       &DummyMemory{},
@@ -88,7 +82,6 @@ func TestLoadBootstrapFilesWithMockFiles(t *testing.T) {
 
 	result := cb.LoadBootstrapFiles()
 
-	// Check that expected files are loaded
 	expectedContents := []string{
 		"This is the soul content",
 		"This is the agent content",
@@ -102,7 +95,6 @@ func TestLoadBootstrapFilesWithMockFiles(t *testing.T) {
 		}
 	}
 
-	// Extra.md should NOT be loaded (not in the files list)
 	if contains(result, "This should not be loaded") {
 		t.Error("EXTRA.md should not be loaded")
 	}
@@ -116,13 +108,10 @@ func TestBuildSystemPrompt(t *testing.T) {
 		t.Error("System prompt should not be empty")
 	}
 
-	// Should contain identity
 	if !contains(prompt, "You are the AI assistant inside the GoDo CLI app") {
 		t.Error("System prompt should contain identity")
 	}
 
-	// Should contain skills section header if skills exist
-	// (it may or may not depending on the environment)
 	_ = prompt
 }
 
@@ -135,7 +124,6 @@ func TestBuildSystemPromptWithMockData(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Write test identity files
 	if err := os.WriteFile(filepath.Join(identityDir, "SOUL.md"), []byte("Soul content"), 0644); err != nil {
 		t.Fatalf("Failed to write SOUL.md: %v", err)
 	}
@@ -143,9 +131,8 @@ func TestBuildSystemPromptWithMockData(t *testing.T) {
 		t.Fatalf("Failed to write AGENT.md: %v", err)
 	}
 
-	// Create mock skills loader
 	mockSkills := &MockSkillsLoader{summary: "Test Skills: coding, analysis"}
-	// Create mock memory
+
 	mockMemory := &MockMemory{context: "User prefers concise responses"}
 
 	cb := &ContextBuilder{
@@ -156,7 +143,6 @@ func TestBuildSystemPromptWithMockData(t *testing.T) {
 
 	prompt := cb.BuildSystemPrompt()
 
-	// Verify components
 	if !contains(prompt, "Soul content") {
 		t.Error("Should contain SOUL.md content")
 	}
@@ -186,7 +172,6 @@ func TestBuildSystemPromptSeparators(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Write test files
 	if err := os.WriteFile(filepath.Join(identityDir, "SOUL.md"), []byte("Part1"), 0644); err != nil {
 		t.Fatalf("Failed to write SOUL.md: %v", err)
 	}
@@ -202,7 +187,6 @@ func TestBuildSystemPromptSeparators(t *testing.T) {
 
 	prompt := cb.BuildSystemPrompt()
 
-	// Check that sections are separated by "---"
 	if !contains(prompt, "---") {
 		t.Error("System prompt should use '---' as separator")
 	}
@@ -240,7 +224,6 @@ func TestLoadBootstrapFilesPartialFiles(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Only create some files
 	if err := os.WriteFile(filepath.Join(identityDir, "SOUL.md"), []byte("Soul only"), 0644); err != nil {
 		t.Fatalf("Failed to write SOUL.md: %v", err)
 	}
@@ -256,7 +239,6 @@ func TestLoadBootstrapFilesPartialFiles(t *testing.T) {
 
 	result := cb.LoadBootstrapFiles()
 
-	// Should contain existing files, skip missing ones
 	if !contains(result, "Soul only") {
 		t.Error("Should contain SOUL.md content")
 	}
@@ -277,7 +259,6 @@ func TestLoadBootstrapFilesVeryLongContent(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Create very long content (1MB)
 	longContent := strings.Repeat("A", 1024*1024)
 	if err := os.WriteFile(filepath.Join(identityDir, "SOUL.md"), []byte(longContent), 0644); err != nil {
 		t.Fatalf("Failed to write SOUL.md: %v", err)
@@ -304,7 +285,6 @@ func TestLoadBootstrapFilesSpecialCharacters(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Content with special characters
 	specialContent := "Hello 世界 🌍 \"quotes\" \\backslash\n\ttabbed\r\nnewlines"
 	if err := os.WriteFile(filepath.Join(identityDir, "SOUL.md"), []byte(specialContent), 0644); err != nil {
 		t.Fatalf("Failed to write SOUL.md: %v", err)
@@ -332,7 +312,6 @@ func TestLoadBootstrapFilesNonExistentDirectory(t *testing.T) {
 		baseDir:      nonExistentDir,
 	}
 
-	// Should not panic, just return empty
 	result := cb.LoadBootstrapFiles()
 	if result != "" {
 		t.Errorf("Expected empty string for non-existent directory, got '%s'", result)
@@ -348,7 +327,6 @@ func TestBuildSystemPromptEmptySkillsAndMemory(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// No identity files, no skills, no memory
 	cb := &ContextBuilder{
 		skillsLoader: &DummySkillsLoader{},
 		memory:       &DummyMemory{},
@@ -357,12 +335,10 @@ func TestBuildSystemPromptEmptySkillsAndMemory(t *testing.T) {
 
 	prompt := cb.BuildSystemPrompt()
 
-	// Should still have core identity
 	if !contains(prompt, "You are the AI assistant inside the GoDo CLI app") {
 		t.Error("Should contain core identity")
 	}
 
-	// Should not have Skills/Memory sections when empty
 	if contains(prompt, "# Skills") {
 		t.Error("Should not have Skills section when skills are empty")
 	}
@@ -396,7 +372,7 @@ func TestBuildSystemPromptWithOnlySkills(t *testing.T) {
 	if !contains(prompt, "coding, analysis") {
 		t.Error("Should contain skills content")
 	}
-	// Memory section should not appear
+
 	if contains(prompt, "# Memory") {
 		t.Error("Should not have Memory section when memory is empty")
 	}
@@ -427,7 +403,7 @@ func TestBuildSystemPromptWithOnlyMemory(t *testing.T) {
 	if !contains(prompt, "User prefers concise responses") {
 		t.Error("Should contain memory content")
 	}
-	// Skills section should not appear
+
 	if contains(prompt, "# Skills") {
 		t.Error("Should not have Skills section when skills are empty")
 	}
@@ -442,7 +418,6 @@ func TestBuildSystemPromptMultipleSeparators(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Multiple bootstrap files
 	for name, content := range map[string]string{
 		"SOUL.md": "Part1", "AGENT.md": "Part2",
 		"IDENTITY.md": "Part3", "USER.md": "Part4",
@@ -463,7 +438,6 @@ func TestBuildSystemPromptMultipleSeparators(t *testing.T) {
 
 	prompt := cb.BuildSystemPrompt()
 
-	// Count occurrences of separator
 	count := strings.Count(prompt, "---")
 	if count < 3 {
 		t.Errorf("Expected at least 3 separators, got %d", count)
@@ -513,8 +487,6 @@ func containsHelper(s, substr string) bool {
 	return false
 }
 
-// Mock implementations for testing
-
 type MockSkillsLoader struct {
 	summary string
 }
@@ -531,7 +503,6 @@ func (m *MockMemory) GetMemoryContext() string {
 	return m.context
 }
 
-// Verify interfaces are implemented correctly
 var _ SkillsLoader = (*MockSkillsLoader)(nil)
 var _ Memory = (*MockMemory)(nil)
 

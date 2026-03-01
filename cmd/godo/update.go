@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/biisal/godo/internal/logger"
@@ -10,7 +11,10 @@ import (
 	"github.com/fatih/color"
 )
 
-func runAutoUpdate(currentVersion string, disableAutoUpdate bool) error {
+func runAutoUpdate(currentVersion string) error {
+	updateEnv := strings.TrimSpace(strings.ToLower(os.Getenv("DISABLE_AUTO_UPDATE")))
+	disableAutoUpdate := (updateEnv == "true") || (updateEnv == "1") || (updateEnv == "yes")
+
 	if disableAutoUpdate {
 		logger.Info("Auto-update disabled via config")
 		return nil

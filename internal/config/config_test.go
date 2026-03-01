@@ -7,7 +7,7 @@ import (
 )
 
 func TestConstants(t *testing.T) {
-	// Test that constants are defined correctly
+
 	if EnvProduction != "prod" {
 		t.Errorf("Expected EnvProduction to be 'prod', got '%s'", EnvProduction)
 	}
@@ -23,7 +23,7 @@ func TestConstants(t *testing.T) {
 }
 
 func TestAppDirectoryConstants(t *testing.T) {
-	// Test that directory constants are defined correctly
+
 	if AppDIR != "/.godo/" {
 		t.Errorf("Expected AppDIR to be '/.godo/', got '%s'", AppDIR)
 	}
@@ -33,7 +33,7 @@ func TestAppDirectoryConstants(t *testing.T) {
 }
 
 func TestMessageTypes(t *testing.T) {
-	// Test message type constants
+
 	if EroorType != "error" {
 		t.Errorf("Expected EroorType to be 'error', got '%s'", EroorType)
 	}
@@ -43,22 +43,19 @@ func TestMessageTypes(t *testing.T) {
 }
 
 func TestPingChannel(t *testing.T) {
-	// Test that Ping channel is initialized
+
 	if Ping == nil {
 		t.Error("Ping channel should be initialized")
 	}
 
-	// Test sending and receiving
 	select {
 	case Ping <- "test":
-		// Success
 	case <-Ping:
-		// Channel was not empty
 	}
 }
 
 func TestDefaultDBName(t *testing.T) {
-	// Test that default DB name is set
+
 	if Cfg.DB_NAME != "todo.db" && Cfg.DB_NAME != "" {
 		t.Errorf("Expected default DB_NAME to be 'todo.db', got '%s'", Cfg.DB_NAME)
 	}
@@ -67,17 +64,14 @@ func TestDefaultDBName(t *testing.T) {
 // ===== EDGE CASE TESTS =====
 
 func TestLoadEnvMultiplePaths(t *testing.T) {
-	// Test that loadEnv checks multiple paths
-	// This tests the internal function behavior
+
 	tmpDir := t.TempDir()
 	envFile := filepath.Join(tmpDir, ".env")
 
-	// Write env file
 	if err := os.WriteFile(envFile, []byte("TEST_KEY=test_value"), 0644); err != nil {
 		t.Fatalf("Failed to write env file: %v", err)
 	}
 
-	// The function should find this file
 	err := loadEnv([]string{"/nonexistent/.env", envFile})
 	if err != nil {
 		t.Errorf("Expected to find env file, got error: %v", err)
@@ -85,11 +79,8 @@ func TestLoadEnvMultiplePaths(t *testing.T) {
 }
 
 func TestLoadEnvNoPaths(t *testing.T) {
-	// Test with no valid paths
 	err := loadEnv([]string{})
-	// Should return error for empty paths
 	if err != nil {
-		// Expected - no valid paths provided
 		t.Logf("Got expected error for empty paths: %v", err)
 	}
 }
@@ -116,7 +107,7 @@ func TestConfigDefaultValues(t *testing.T) {
 }
 
 func TestConfigModeValues(t *testing.T) {
-	// Test that mode constants are valid
+
 	validModes := []string{ModeTodo, ModeAgent}
 	found := false
 	for _, m := range validModes {
@@ -132,23 +123,19 @@ func TestConfigModeValues(t *testing.T) {
 }
 
 func TestPingChannelBuffer(t *testing.T) {
-	// Test that ping channel has buffer
+
 	if Ping == nil {
 		t.Error("Ping channel should be initialized")
 	}
 
-	// Fill the channel to test buffer
 	for i := 0; i < 250; i++ {
 		select {
 		case Ping <- "ping":
-			// Successfully sent
 		default:
-			// Channel buffer is full
-			i = 250 // exit the loop
+			i = 250
 		}
 	}
 
-	// Drain the channel
 	for {
 		select {
 		case <-Ping:
@@ -159,7 +146,7 @@ func TestPingChannelBuffer(t *testing.T) {
 }
 
 func TestConstantsNotEmpty(t *testing.T) {
-	// Verify all constants have values
+
 	if EnvProduction == "" {
 		t.Error("EnvProduction should not be empty")
 	}
@@ -181,7 +168,7 @@ func TestConstantsNotEmpty(t *testing.T) {
 }
 
 func TestMessageTypeConstants(t *testing.T) {
-	// Test message type constants
+
 	if EroorType == "" { // Note: intentionally spelled wrong in config
 		t.Error("EroorType should not be empty")
 	}

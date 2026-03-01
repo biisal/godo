@@ -39,5 +39,6 @@ func initBot() *agent.Bot {
 		os.Exit(1)
 	}
 	bot.History = *history
+	bot.InitOAIMessages()
 	return bot
 }

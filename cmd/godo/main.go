@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/biisal/godo/internal/config"
 )
@@ -11,8 +10,7 @@ import (
 var version = "dev"
 
 func main() {
-	disableAutoUpdate := os.Getenv("DISABLE_AUTO_UPDATE") == "true"
-	if err := runAutoUpdate(version, disableAutoUpdate); err != nil {
+	if err := runAutoUpdate(version); err != nil {
 		slog.Error("Auto-update error", "err", err)
 	}
 

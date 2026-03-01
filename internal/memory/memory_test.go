@@ -195,7 +195,6 @@ func TestDeleteNonExistent(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	// Should not error when deleting a non-existent key
 	err := store.Delete("does_not_exist")
 	if err != nil {
 		t.Fatalf("Delete of non-existent key should not error, got: %v", err)
@@ -265,7 +264,6 @@ func TestSearchEmptyQuery(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	// Empty query should return all
 	results, err := store.Search("")
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
@@ -338,7 +336,6 @@ func TestGetAllOrder(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	// Update the first one so it becomes most recent
 	if err := store.Save("first", "updated"); err != nil {
 		t.Fatalf("Save failed: %v", err)
 	}
@@ -350,7 +347,6 @@ func TestGetAllOrder(t *testing.T) {
 	if len(entries) != 3 {
 		t.Fatalf("Expected 3 entries, got %d", len(entries))
 	}
-	// Most recently updated should be first
 	if entries[0].Key != "first" {
 		t.Errorf("Expected most recently updated key 'first' at index 0, got %q", entries[0].Key)
 	}

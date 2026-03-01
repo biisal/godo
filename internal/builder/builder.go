@@ -11,22 +11,18 @@ import (
 	"github.com/biisal/godo/internal/memory"
 )
 
-// SkillsLoader interface placeholder for future implementation
 type SkillsLoader interface {
 	BuildSkillsSummary() string
 }
 
-// Memory interface placeholder for future implementation
 type Memory interface {
 	GetMemoryContext() string
 }
 
-// DummySkillsLoader for when no skills loader is provided
 type DummySkillsLoader struct{}
 
 func (d *DummySkillsLoader) BuildSkillsSummary() string { return "" }
 
-// DummyMemory for when no memory is provided
 type DummyMemory struct{}
 
 func (d *DummyMemory) GetMemoryContext() string { return "" }
@@ -92,12 +88,10 @@ func (cb *ContextBuilder) BuildSystemPrompt() string {
 %s`, skillsSummary))
 	}
 
-	// Memory context
 	memoryContext := cb.memory.GetMemoryContext()
 	if memoryContext != "" {
 		parts = append(parts, "# Memory\n\n"+memoryContext)
 	}
 
-	// Join with "---" separator
 	return strings.Join(parts, "\n\n---\n\n")
 }

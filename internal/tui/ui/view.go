@@ -309,24 +309,3 @@ func (m *TeaModel) RenderChatContentFromHistory() {
 		m.AgentModel.ChatViewport.GotoBottom()
 	}
 }
-
-// func (m *TeaModel) renderAgentMarkdown(text string) string {
-// 	if strings.TrimSpace(text) == "" {
-// 		return text
-// 	}
-//
-// 	renderer, err := glamour.NewTermRenderer(
-// 		glamour.WithAutoStyle(),
-// 		glamour.WithWordWrap(m.Width*70/100),
-// 	)
-// 	if err != nil {
-// 		return styles.AgentContentStyle.Render(text)
-// 	}
-//
-// 	rendered, err := renderer.Render(text)
-// 	if err != nil {
-// 		return styles.AgentContentStyle.Render(text)
-// 	}
-//
-// 	return strings.TrimRight(rendered, "\n")
-// }

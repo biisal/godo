@@ -122,7 +122,7 @@ func (b *Bot) appendMessage(msg agentModel.Message) {
 	b.oaiMessages = append(b.oaiMessages, toOAIMessage(msg))
 }
 
-func (b *Bot) initOAIMessages() {
+func (b *Bot) InitOAIMessages() {
 	b.oaiMessages = make([]openai.ChatCompletionMessageParamUnion, 0, len(b.History)+1)
 	b.oaiMessages = append(b.oaiMessages, openai.SystemMessage(b.systemPrompt))
 	for _, m := range b.History {
@@ -153,7 +153,7 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		isRefresh = refresh[0]
 	}
 	if len(b.oaiMessages) == 0 {
-		b.initOAIMessages()
+		b.InitOAIMessages()
 	}
 
 	for range maxToolSteps {

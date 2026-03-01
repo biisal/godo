@@ -11,21 +11,18 @@ func TestAppendMessageUpdatesOAIMessages(t *testing.T) {
 		systemPrompt: "You are a test agent.",
 	}
 
-	// 1. Initial manual initOAIMessages (what agentAPICall does)
-	b.initOAIMessages()
+	b.InitOAIMessages()
 
 	if len(b.oaiMessages) != 1 {
 		t.Fatalf("expected 1 oaiMessage (system prompt), got %d", len(b.oaiMessages))
 	}
 
-	// 2. Simulate what AgentResponse does when user sends a prompt
 	userMsg := agentModel.Message{
 		Role:    agentModel.UserRole,
 		Content: "Hello World",
 	}
 	b.appendMessage(userMsg)
 
-	// 3. Verify both History and oaiMessages grew
 	if len(b.History) != 1 {
 		t.Errorf("expected 1 History item, got %d", len(b.History))
 	}
@@ -33,7 +30,6 @@ func TestAppendMessageUpdatesOAIMessages(t *testing.T) {
 		t.Fatalf("expected 2 oaiMessages (system + user), got %d", len(b.oaiMessages))
 	}
 
-	// 4. Simulate assistant responding
 	asstMsg := agentModel.Message{
 		Role:    agentModel.AssistantRole,
 		Content: "Hello Human",
@@ -57,8 +53,7 @@ func TestInitOAIMessagesRebuildsCorrectly(t *testing.T) {
 		},
 	}
 
-	// It should build an array sized len(History) + 1 (the system prompt)
-	b.initOAIMessages()
+	b.InitOAIMessages()
 
 	if len(b.oaiMessages) != 3 {
 		t.Fatalf("expected 3 messages, got %d", len(b.oaiMessages))
