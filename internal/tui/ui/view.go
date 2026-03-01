@@ -123,6 +123,24 @@ func AgentView(m *TeaModel, maxHeight int) string {
 	if m.ThinkContent.Len() > 0 {
 		content += styles.ThinkingTokenStyle.Render(m.ThinkContent.String())
 	}
+
+	if strings.TrimSpace(content) == "" {
+		welcomeTitle := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(styles.Colors().Primary).
+			MarginBottom(1).
+			Render("✦ GODO Agent")
+		welcomeHint := styles.InstructionStyle.Render("Type a message below to get started")
+		welcomeMsg := lipgloss.JoinVertical(lipgloss.Center, welcomeTitle, welcomeHint)
+		content = lipgloss.Place(
+			chatWidth-cWidth,
+			outerChatIViewHeight-cHeight,
+			lipgloss.Center,
+			lipgloss.Center,
+			welcomeMsg,
+		)
+	}
+
 	m.AgentModel.ChatViewport.SetContent(wordwrap.String(content, chatWidth-cWidth-1))
 	chatView := chatstyle.Width(chatWidth).Render(m.AgentModel.ChatViewport.View())
 

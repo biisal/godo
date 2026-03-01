@@ -128,8 +128,6 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ChatContent.WriteString(styles.ErrorInChatStyle.Width(m.Width).Render(msg.err.Error()) + "\n")
 			m.AgentModel.ChatViewport.SetContent(m.ChatContent.String())
 			m.AgentModel.ChatViewport.GotoBottom()
-		} else {
-			m.AgentModel.PromptInput.Reset()
 		}
 		return m, nil
 	case bus.StreamMsg:
