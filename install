@@ -69,9 +69,10 @@ else
     log "Mode: ${GREEN}Remote Download${NC}"
     
     # OS/Arch Detection
-    os=$(uname -s); arch=$(uname -m)
-    [[ "$os" == "Darwin" ]] && os="Darwin" || os="Linux"
-    [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && arch="arm64" || arch="x86_64"
+    os=$(uname -s | tr '[:upper:]' '[:lower:]')
+    arch=$(uname -m)
+    [[ "$arch" == "x86_64" || "$arch" == "amd64" ]] && arch="amd64"
+    [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && arch="arm64"
     filename="${APP}_${os}_${arch}.tar.gz"
 
     log "Resolving latest version from GitHub..."
