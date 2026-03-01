@@ -25,7 +25,11 @@ func setupTestDB(t *testing.T) *sql.DB {
 	if _, err := db.Exec(sqlStmt); err != nil {
 		t.Fatalf("Failed to create memories table: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("Failed to close database: %v", err)
+		}
+	})
 	return db
 }
 
@@ -164,8 +168,12 @@ func TestDelete(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("lang", "Go")
-	store.Save("editor", "vim")
+	if err := store.Save("lang", "Go"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("editor", "vim"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	if err := store.Delete("lang"); err != nil {
 		t.Fatalf("Delete failed: %v", err)
@@ -200,9 +208,16 @@ func TestSearchByKey(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("favorite_language", "Go")
-	store.Save("favorite_editor", "vim")
-	store.Save("os", "macOS")
+	if err := store.Save("os", "macOS"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("favorite_editor", "vim"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	if err := store.Save("favorite_language", "Go"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	results, err := store.Search("favorite")
 	if err != nil {
@@ -217,9 +232,15 @@ func TestSearchByContent(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("lang", "Go programming language")
-	store.Save("hobby", "programming robots")
-	store.Save("pet", "golden retriever")
+	if err := store.Save("lang", "Go programming language"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("hobby", "programming robots"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("pet", "golden retriever"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	results, err := store.Search("programming")
 	if err != nil {
@@ -234,9 +255,15 @@ func TestSearchEmptyQuery(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("a", "1")
-	store.Save("b", "2")
-	store.Save("c", "3")
+	if err := store.Save("a", "1"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("b", "2"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("c", "3"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	// Empty query should return all
 	results, err := store.Search("")
@@ -252,7 +279,9 @@ func TestSearchNoResults(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("lang", "Go")
+	if err := store.Save("lang", "Go"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	results, err := store.Search("python")
 	if err != nil {
@@ -267,7 +296,9 @@ func TestSearchCaseInsensitive(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("Language", "GoLang")
+	if err := store.Save("Language", "GoLang"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	results, err := store.Search("golang")
 	if err != nil {
@@ -297,12 +328,20 @@ func TestGetAllOrder(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("first", "1")
-	store.Save("second", "2")
-	store.Save("third", "3")
+	if err := store.Save("first", "1"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("second", "2"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("third", "3"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	// Update the first one so it becomes most recent
-	store.Save("first", "updated")
+	if err := store.Save("first", "updated"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	entries, err := store.GetAll()
 	if err != nil {
@@ -341,8 +380,12 @@ func TestGetMemoryContextFormatted(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("name", "Avisek")
-	store.Save("lang", "Go")
+	if err := store.Save("name", "Avisek"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("lang", "Go"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	result := store.GetMemoryContext()
 
@@ -361,8 +404,12 @@ func TestGetMemoryContextBulletPoints(t *testing.T) {
 	db := setupTestDB(t)
 	store := NewMemoryStore(db)
 
-	store.Save("a", "1")
-	store.Save("b", "2")
+	if err := store.Save("a", "1"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	if err := store.Save("b", "2"); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
 
 	result := store.GetMemoryContext()
 

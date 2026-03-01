@@ -1,10 +1,22 @@
 version: '3'
 
+vars:
+  APP_NAME: godo
+  MAIN_PKG: ./cmd/godo
+  BIN_DIR: bin
+
 tasks:
+  all:
+    desc: Run lint, tests, and build
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
+
   build:
     desc: Build the Go application
     cmds:
-      - go build -o bin/godo cmd/godo/main.go
+      - go build -o {{.BIN_DIR}}/{{.APP_NAME}} {{.MAIN_PKG}}
 
   build:dist:
     desc: Build for distribution
@@ -14,7 +26,12 @@ tasks:
   run:
     desc: Run the application
     cmds:
-      - go run cmd/godo/main.go
+      - go run {{.MAIN_PKG}}
+
+  lint:
+    desc: Run linter only
+    cmds:
+      - golangci-lint run
 
   test:
     desc: Run tests (fail fast)
@@ -26,26 +43,27 @@ tasks:
     cmds:
       - go test -v -failfast ./...
 
+  test:list:
+    desc: List all test functions
+    cmds:
+      - go test -list '.*' ./... 2>&1 | grep -E '^Test'
+
   tidy:
     desc: Tidy Go modules
     cmds:
       - go mod tidy
 
-  lint:
-    desc: Run linter
-    cmds:
-      - go vet ./...
 
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -rf bin/
+      - rm -rf {{.BIN_DIR}}/
       - rm -rf dist/
 
   install:
     desc: Install the application
     cmds:
-      - go install cmd/godo/main.go
+      - go install {{.MAIN_PKG}}
 
   release:
     desc: Create a release build
