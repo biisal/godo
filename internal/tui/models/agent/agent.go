@@ -12,6 +12,7 @@ type AgentModel struct {
 	PromptInput   textinput.Model
 	ChatViewport  viewport.Model
 	StateText     string
+	IsProcessing  bool
 	ShellViewport viewport.Model
 	ShellContent  strings.Builder
 }

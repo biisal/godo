@@ -121,6 +121,7 @@ func (m *TeaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch msg := msg.(type) {
 	case agentResponseMsg:
+		m.AgentModel.IsProcessing = false
 		if msg.refresh {
 			m.RefreshList()
 		}

@@ -176,6 +176,9 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 		case "down":
 			m.AgentModel.ChatViewport.ScrollDown(1)
 		case "enter":
+			if m.AgentModel.IsProcessing {
+				return m, nil
+			}
 			promtInput := strings.TrimSpace(m.AgentModel.PromptInput.Value())
 			if promtInput == "" {
 				return m, nil
@@ -192,6 +195,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 			slog.Debug("User Message Details", "Prompt", map[string]any{"promptInput": promtInput})
 			bus.EmitUser(promtInput)
 			m.AgentModel.PromptInput.Reset()
+			m.AgentModel.IsProcessing = true
 			return m, tea.Cmd(func() tea.Msg {
 				_, refresh, err := m.AgentBot.AgentResponse(promtInput)
 				return agentResponseMsg{
