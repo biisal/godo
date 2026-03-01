@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/memory"
 )
 
 // SkillsLoader interface placeholder for future implementation
@@ -37,7 +38,6 @@ type ContextBuilder struct {
 }
 
 func NewContextBuilder() *ContextBuilder {
-	// Resolve base directory dynamically based on current working directory
 	baseDir, _ := os.Getwd()
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -47,8 +47,8 @@ func NewContextBuilder() *ContextBuilder {
 	identityDir := filepath.Join(homeDir, config.AppDIR, "content", "identity")
 
 	return &ContextBuilder{
-		skillsLoader: NewFileSkillsLoader(filepath.Join(homeDir, config.AppDIR, "content")), // resolves to homeDir/.godo/content/skills
-		memory:       &DummyMemory{},
+		skillsLoader: NewFileSkillsLoader(filepath.Join(homeDir, config.AppDIR, "content")),
+		memory:       memory.NewMemoryStore(config.Cfg.DB),
 		baseDir:      identityDir,
 	}
 }
@@ -56,7 +56,9 @@ func NewContextBuilder() *ContextBuilder {
 func (cb *ContextBuilder) getIdentity() string {
 	return `You are the AI assistant inside the GoDo CLI app.
 Use the tools available to fulfill the user's requests.
-Always respond in plain text. Do NOT use markdown formatting (no headers, bold, italic, bullet points, or code blocks) as the output is displayed in a terminal.`
+Always respond in plain text. Do NOT use markdown formatting (no headers, bold, italic, bullet points, or code blocks) as the output is displayed in a terminal.
+When you learn important facts about the user or their preferences, save them with the SaveMemory tool so you remember across sessions.
+Use RecallMemories when you need to look up previously saved information.`
 }
 
 func (cb *ContextBuilder) LoadBootstrapFiles() string {
@@ -77,16 +79,13 @@ func (cb *ContextBuilder) LoadBootstrapFiles() string {
 func (cb *ContextBuilder) BuildSystemPrompt() string {
 	parts := []string{}
 
-	// Core identity section
 	parts = append(parts, cb.getIdentity())
 
-	// Bootstrap files (SOUL.md, AGENT.md, IDENTITY.md, USER.md)
 	bootstrapContent := cb.LoadBootstrapFiles()
 	if bootstrapContent != "" {
 		parts = append(parts, bootstrapContent)
 	}
 
-	// Skills summary
 	skillsSummary := cb.skillsLoader.BuildSkillsSummary()
 	if skillsSummary != "" {
 		parts = append(parts, fmt.Sprintf(`# Skills

@@ -19,6 +19,8 @@ const (
 	EditFileFunc         = "EditFile"
 	PatchFileFunc        = "PatchFile"
 	InsertAtLineFunc     = "InsertAtLine"
+	SaveMemoryFunc       = "SaveMemory"
+	RecallMemoriesFunc   = "RecallMemories"
 )
 
 var tools = map[string]func(openai.ChatCompletionMessageToolCall) (any, bool, error){
@@ -34,6 +36,8 @@ var tools = map[string]func(openai.ChatCompletionMessageToolCall) (any, bool, er
 	EditFileFunc:         runEditFile,
 	PatchFileFunc:        runPatchFile,
 	InsertAtLineFunc:     runInsertAtLine,
+	SaveMemoryFunc:       runSaveMemory,
+	RecallMemoriesFunc:   runRecallMemories,
 }
 
 func FormattedFunctions() []openai.ChatCompletionToolParam {
@@ -323,6 +327,48 @@ The patch should target the same path and include proper hunk headers.`),
 						},
 					},
 					"required": []string{"path", "lineNumber", "content"},
+				},
+			},
+		},
+		{
+			Type: constant.Function("function"),
+			Function: shared.FunctionDefinitionParam{
+				Name: SaveMemoryFunc,
+				Description: openai.String(`Save a fact or preference to persistent memory.
+Memories survive across conversations and even after /clear.
+Use this when the user tells you something worth remembering long-term (preferences, project details, personal facts).
+If a memory with the same key already exists, it will be updated.`),
+				Parameters: shared.FunctionParameters{
+					"type": "object",
+					"properties": map[string]any{
+						"key": map[string]any{
+							"type":        "string",
+							"description": "Short label for this memory (e.g. 'favorite_language', 'project_stack', 'user_name').",
+						},
+						"content": map[string]any{
+							"type":        "string",
+							"description": "The fact or preference to remember.",
+						},
+					},
+					"required": []string{"key", "content"},
+				},
+			},
+		},
+		{
+			Type: constant.Function("function"),
+			Function: shared.FunctionDefinitionParam{
+				Name: RecallMemoriesFunc,
+				Description: openai.String(`Search persistent memories by keyword.
+Returns matching memory entries. Use this to look up previously saved facts.
+Pass an empty query to list all memories.`),
+				Parameters: shared.FunctionParameters{
+					"type": "object",
+					"properties": map[string]any{
+						"query": map[string]any{
+							"type":        "string",
+							"description": "Search keyword to match against memory keys and content. Leave empty to list all.",
+						},
+					},
 				},
 			},
 		},

@@ -187,7 +187,7 @@ func UpdateOnKey(msg tea.KeyMsg, m *TeaModel) (tea.Model, tea.Cmd) {
 				if err := m.AgentBot.TruncateChats(); err != nil {
 					return m, m.ShowError(err)
 				}
-				m.ChatContent.Reset()
+				m.ChatContent = strings.Builder{}
 				m.AgentModel.PromptInput.Reset()
 				return m, nil
 			}

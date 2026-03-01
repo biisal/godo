@@ -152,7 +152,9 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 	if len(refresh) > 0 {
 		isRefresh = refresh[0]
 	}
-	b.initOAIMessages()
+	if len(b.oaiMessages) == 0 {
+		b.initOAIMessages()
+	}
 
 	for range maxToolSteps {
 		ctx, cancel := context.WithCancel(context.Background())

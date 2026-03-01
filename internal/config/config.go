@@ -143,6 +143,13 @@ func initDb() error {
 		Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		chat TEXT
 	);
+	CREATE TABLE IF NOT EXISTS memories (
+		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		key TEXT NOT NULL UNIQUE,
+		content TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
 	COMMIT;
 	`
 	if _, err = db.Exec(sqlStmt); err != nil {

@@ -20,6 +20,7 @@ import (
 
 	"github.com/biisal/godo/internal/bus"
 	"github.com/biisal/godo/internal/config"
+	"github.com/biisal/godo/internal/memory"
 	"github.com/biisal/godo/internal/tui/actions/todo"
 	"github.com/gocolly/colly/v2"
 	"github.com/openai/openai-go"
@@ -878,4 +879,56 @@ func cleanDuckDuckGoResultURL(raw string) string {
 
 func normalizeSpace(s string) string {
 	return strings.Join(strings.Fields(html.UnescapeString(s)), " ")
+}
+
+func runSaveMemory(tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
+	var args struct {
+		Key     string `json:"key"`
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+		return "", false, fmt.Errorf("invalid tool arguments: %w", err)
+	}
+
+	store := memory.NewMemoryStore(config.Cfg.DB)
+	if err := store.Save(args.Key, args.Content); err != nil {
+		return "", false, fmt.Errorf("failed to save memory: %w", err)
+	}
+
+	bus.EmitShell(fmt.Sprintf("saved memory: %s\n", args.Key))
+	return map[string]any{
+		"success": true,
+		"key":     args.Key,
+		"message": "Memory saved successfully",
+	}, false, nil
+}
+
+func runRecallMemories(tc openai.ChatCompletionMessageToolCall) (any, bool, error) {
+	var args struct {
+		Query string `json:"query"`
+	}
+	if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+		return "", false, fmt.Errorf("invalid tool arguments: %w", err)
+	}
+
+	store := memory.NewMemoryStore(config.Cfg.DB)
+	entries, err := store.Search(args.Query)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to search memories: %w", err)
+	}
+
+	results := make([]map[string]string, 0, len(entries))
+	for _, e := range entries {
+		results = append(results, map[string]string{
+			"key":     e.Key,
+			"content": e.Content,
+		})
+	}
+
+	bus.EmitShell(fmt.Sprintf("found %d memories\n", len(results)))
+	return map[string]any{
+		"query":   args.Query,
+		"count":   len(results),
+		"results": results,
+	}, false, nil
 }
