@@ -274,7 +274,7 @@ func (b *Bot) AgentResponse(prompt string) ([]agentModel.Message, bool, error) {
 		Role:    agentModel.UserRole,
 		Content: prompt,
 	}
-	b.History = append(b.History, userMsg)
+	b.appendMessage(userMsg)
 	if err := b.AddChatToDB(userMsg); err != nil {
 		slog.Error("error saving chat to db", "err", err)
 	}
