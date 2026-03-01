@@ -1,8 +1,8 @@
-# GODO 
+# Godo - AI agent that can build almost many things
 
-![Agent](./assets/godo-agent-home.png)
+![Agent](./assets/agent-home.png)
 
-#### An AI Agent built for the Terminal to boost your productivity.
+#### A fully autonomous AI Agent built for the Terminal to handle your everyday tasks.
 ## Installation
 
 ### Using the install script (Recommended)
@@ -17,22 +17,28 @@ curl -sS https://raw.githubusercontent.com/biisal/godo/main/install | bash
 go install github.com/biisal/godo@latest
 ```
 ## What makes GODO unique?
-1. **AI AI AI** - Nowdays AI is eveywhere :) why not use the free gemini api and not to waste it :)
-2. **Accessibility** - Godo is terminal based so just open the terminal and run it.. you dont need any browser or app to manage your todos
-3. **UI** - GODO comes with a simple Good Looking UI 
-4. **Fast** - GODO is lightweight and it uses live streaming to fetch the data from the gemini api and render to UI
-5. **Agent** - The Ai Agent can manage your todos for you so you dont need to manage things manually
+1. **True AI Agent** - Godo acts autonomously with a rich set of tools (shell execution, file reading, web search, SQL execution) to get things done without heavy lifting from you.
+2. **Accessible & Offline-First** - Godo is built natively for the terminal. No browsers, no heavy Electron apps. Plus, it seamlessly supports local reasoning models via Ollama.
+3. **Beautiful TUI** - A polished, responsive Terminal User Interface that supports streaming responses and visually rich Markdown rendering.
+4. **Context-Aware Memory** - The agent remembers your past interactions, saving critical context to give you better, personalized assistance across sessions.
+5. **Fast & Responsive** - Extremely lightweight, built in Go, and uses real-time event streaming for instant UI feedback without blocking.
 
-## More Features
-1. **Search** - You can search for your todos by the title
-2. **Mark** - You can mark your todos as done or pending
-
+## Capabilities & Tools
+1. **Shell Execution** - The agent can run arbitrary bash commands locally on your machine. Be careful!
+2. **File System Access** - Read, write, and list directories directly from the chat.
+3. **Database Queries** - Connect to SQLite databases and execute queries right from the terminal.
+4. **Web Search** - Search DuckDuckGo directly for up-to-date reasoning and fact-checking.
+5. **Persistent Memory** - The agent dynamically remembers your preferences and context using local SQLite storage across sessions.
+6. **Task Management** - Search, add, and mark your todos as done or pending directly in the chat.
 
 ![List](./assets/godo-todo-list.png)
 
-3. **Multiline Text** - You can add multiline description to your todos
+7. **Multiline Todos** - Add multiline descriptions to your todos for better task context.
 
 ![Description](./assets/godo-multiline.png)
+
+8. **Auto Update** - Keep Godo up to date easily with the built-in update command (`godo update`).
+9. **Markdown Rendering** - Beautifully rendered markdown in the terminal for better readability.
 
 ### Usage
 
