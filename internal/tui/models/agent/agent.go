@@ -26,7 +26,7 @@ const (
 	StateProcessing = "Preparing request..."
 	StateWriting    = "Generating response..."
 	StateReady      = "Responding..."
-	StateIdle       = "Ready — ask anything to continue"
+	StateIdle       = "Ask me anything"
 )
 
 type Message struct {

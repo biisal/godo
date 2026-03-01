@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"os"
+	"syscall"
 
 	"github.com/biisal/godo/internal/logger"
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/fatih/color"
 )
 
-func runAutoUpdate(cmd string, currentVersion string, disableAutoUpdate bool) error {
+func runAutoUpdate(currentVersion string, disableAutoUpdate bool) error {
 	if disableAutoUpdate {
 		logger.Info("Auto-update disabled via config")
 		return nil
@@ -27,7 +28,7 @@ func runAutoUpdate(cmd string, currentVersion string, disableAutoUpdate bool) er
 	latest, err := selfupdate.UpdateSelf(context.Background(), currentVersion, repo)
 	if err != nil {
 		logger.Error("Error checking for updates: %v", err)
-		return nil // Don't fail the app if update check fails
+		return nil
 	}
 
 	if latest.Version() == currentVersion {
@@ -36,30 +37,15 @@ func runAutoUpdate(cmd string, currentVersion string, disableAutoUpdate bool) er
 	}
 
 	logger.Success("Updated from %s to %s", currentVersion, latest.Version())
-	_ = cmd // cmd parameter reserved for future use
-	color.Cyan("Please restart the application to use the new version")
-	return nil
-}
+	color.Cyan("Restarting with the new version...")
 
-func CheckForUpdate(currentVersion string) error {
-	if currentVersion == "" || currentVersion == "dev" || currentVersion == "latest" {
-		return fmt.Errorf("cannot check for updates in development build")
-	}
-
-	repo := selfupdate.ParseSlug("biisal/godo")
-
-	latest, err := selfupdate.UpdateSelf(context.Background(), currentVersion, repo)
+	// Re-exec the current process with the updated binary
+	execPath, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("error checking for updates: %w", err)
-	}
-
-	if latest.Version() == currentVersion {
-		fmt.Printf("You're already on the latest version: %s\n", currentVersion)
+		logger.Error("Could not determine executable path: %v", err)
+		color.Cyan("Please restart the application manually to use the new version")
 		return nil
 	}
 
-	fmt.Printf("New version available: %s -> %s\n", currentVersion, latest.Version())
-	fmt.Println(latest.ReleaseNotes)
-
-	return nil
+	return syscall.Exec(execPath, os.Args, os.Environ())
 }
