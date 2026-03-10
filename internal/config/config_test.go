@@ -34,8 +34,8 @@ func TestAppDirectoryConstants(t *testing.T) {
 
 func TestMessageTypes(t *testing.T) {
 
-	if EroorType != "error" {
-		t.Errorf("Expected EroorType to be 'error', got '%s'", EroorType)
+	if ErrorType != "error" {
+		t.Errorf("Expected ErrorType to be 'error', got '%s'", ErrorType)
 	}
 	if MessageType != "message" {
 		t.Errorf("Expected MessageType to be 'message', got '%s'", MessageType)
@@ -169,8 +169,8 @@ func TestConstantsNotEmpty(t *testing.T) {
 
 func TestMessageTypeConstants(t *testing.T) {
 
-	if EroorType == "" { // Note: intentionally spelled wrong in config
-		t.Error("EroorType should not be empty")
+	if ErrorType == "" { // Note: intentionally spelled wrong in config
+		t.Error("ErrorType should not be empty")
 	}
 	if MessageType == "" {
 		t.Error("MessageType should not be empty")
