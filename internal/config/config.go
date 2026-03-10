@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"os"
@@ -37,9 +38,17 @@ var (
 	AppDIR         = "/.godo/"
 	AppName        = "logs"
 	LogDIR         string
-	EroorType      = "error"
+	ErrorType      = "error"
 	MessageType    = "message"
+
+	stdin = bufio.NewScanner(os.Stdin)
 )
+
+func readLine(prompt string) string {
+	fmt.Print(prompt)
+	stdin.Scan()
+	return strings.TrimSpace(stdin.Text())
+}
 
 func loadEnv(paths []string) error {
 	for _, path := range paths {
@@ -52,10 +61,12 @@ func loadEnv(paths []string) error {
 
 func MustLoad() error {
 	var err error
+
 	HomeDIR, err = os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory for writing logs and todos: %s", err.Error())
 	}
+
 	if err = os.MkdirAll(HomeDIR+AppDIR, os.ModePerm); err != nil {
 		return err
 	}
@@ -65,46 +76,54 @@ func MustLoad() error {
 	if err = cleanenv.ReadEnv(&Cfg); err != nil {
 		return err
 	}
+
 	StartTime = time.Now()
-	if err = getApiKey(); err != nil {
-		return err
-	}
+
 	if Cfg.OPENAI_MODEL == "" {
 		Cfg.OPENAI_MODEL = "gpt-4o-mini"
 		fmt.Println("OPENAI_MODEL is not set, using default value:", Cfg.OPENAI_MODEL)
 	}
+
 	if Cfg.OPENAI_BASE_URL == "" {
 		Cfg.OPENAI_BASE_URL = "https://api.openai.com/v1"
 	}
+
 	if Cfg.ENVIRONMENT == "" {
 		Cfg.ENVIRONMENT = EnvProduction
 	}
+
 	if Cfg.ENVIRONMENT == EnvDevelopment {
 		LogDIR = "."
 	} else {
 		LogDIR = HomeDIR + AppDIR
 	}
+
 	if Cfg.MODE == "" {
-		Cfg.MODE = "agent"
+		Cfg.MODE = ModeAgent
 	}
+
 	if Cfg.DB_PATH == "" {
 		if Cfg.DB_NAME == "" {
 			Cfg.DB_NAME = "todo.db"
 		}
 		Cfg.DB_PATH = HomeDIR + AppDIR + Cfg.DB_NAME
 	}
-	if err = SaveCfg(); err != nil {
+
+	if err = getApiKey(); err != nil {
 		return err
 	}
+
 	if err = initDb(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func SaveCfg() error {
-	filepath := HomeDIR + AppDIR + ".env"
-	f, err := os.Create(filepath)
+	envPath := HomeDIR + AppDIR + ".env"
+
+	f, err := os.Create(envPath)
 	if err != nil {
 		return err
 	}
@@ -112,18 +131,13 @@ func SaveCfg() error {
 		_ = f.Close()
 	}()
 
-	content := ""
-	content += "OPENAI_API_KEY=" + Cfg.OPENAI_API_KEY + "\n"
-	content += "OPENAI_MODEL=" + Cfg.OPENAI_MODEL + "\n"
-	content += "OPENAI_BASE_URL=" + Cfg.OPENAI_BASE_URL + "\n"
-	content += "MODE=" + Cfg.MODE + "\n"
+	content := "OPENAI_API_KEY=" + Cfg.OPENAI_API_KEY + "\n" +
+		"OPENAI_MODEL=" + Cfg.OPENAI_MODEL + "\n" +
+		"OPENAI_BASE_URL=" + Cfg.OPENAI_BASE_URL + "\n" +
+		"MODE=" + Cfg.MODE + "\n"
 
 	_, err = f.WriteString(content)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func initDb() error {
@@ -131,6 +145,7 @@ func initDb() error {
 	if err != nil {
 		return err
 	}
+
 	sqlStmt := `
 	BEGIN;
 	CREATE TABLE IF NOT EXISTS todos (
@@ -152,26 +167,32 @@ func initDb() error {
 	);
 	COMMIT;
 	`
+
 	if _, err = db.Exec(sqlStmt); err != nil {
 		return err
 	}
+
 	Cfg.DB = db
 	return nil
 }
 
 func getApiKey() error {
 	Cfg.OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
-	if Cfg.OPENAI_API_KEY == "" {
-		fmt.Println("Enter your OpenAI API key (or compatible API key):")
-		input := ""
-		_, _ = fmt.Scanln(&input)
-		Cfg.OPENAI_API_KEY = input
-		if err := SaveCfg(); err != nil {
-			return err
-		}
+	if Cfg.OPENAI_API_KEY != "" {
+		return nil
 	}
-	if Cfg.OPENAI_API_KEY == "" {
+
+	key := readLine("Enter your OpenAI API key (or compatible API key): ")
+	if key == "" {
 		return fmt.Errorf("OPENAI_API_KEY is not set")
 	}
+
+	Cfg.OPENAI_API_KEY = key
+
+	if err := SaveCfg(); err != nil {
+		return fmt.Errorf("failed to save config after setting API key: %w", err)
+	}
+
+	fmt.Println("Config saved to", HomeDIR+AppDIR+".env")
 	return nil
 }
