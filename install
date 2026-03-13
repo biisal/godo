@@ -171,13 +171,25 @@ if [[ "$(uname -s)" == "Linux" ]]; then
 
   mkdir -p "$DESKTOP_DIR"
 
+  TERMINAL=""
+  for term in kitty alacritty konsole xfce4-terminal xterm; do
+    if command -v "$term" >/dev/null 2>&1; then
+      TERMINAL="$term"
+      break
+    fi
+  done
+
+  if [[ -z "$TERMINAL" ]]; then
+    TERMINAL="xterm"
+  fi
+
   cat >"$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Name=Godo
 Comment=Run Godo CLI
-Exec=$HOME/.godo/bin/godo
+Exec=$TERMINAL -e $HOME/.godo/bin/godo
 Icon=utilities-terminal
-Terminal=true
+Terminal=false
 Type=Application
 Categories=Development;Utility;
 EOF
