@@ -15,11 +15,11 @@ NC='\033[0m'
 # --- 1. Helper Functions ---
 
 log() {
-    echo -e "${MUTED}[$(date +'%H:%M:%S')]${NC} $1"
+  echo -e "${MUTED}[$(date +'%H:%M:%S')]${NC} $1"
 }
 
 usage() {
-    cat <<EOF
+  cat <<EOF
 Godo Installer
 Usage: install.sh [options]
 
@@ -31,12 +31,12 @@ EOF
 }
 
 show_logo() {
-    echo -e "${CYAN}"
-    echo -e "   godo     ..----.._    _"
-    echo -e "            .' .--.    \"-.(O)_"
-    echo -e "'-.__.-'\"'=:|  ,  _)_ \__ . c\'-.."
-    echo -e "             ''------'---''---'-\""
-    echo -e "${NC}"
+  echo -e "${CYAN}"
+  echo -e "   godo     ..----.._    _"
+  echo -e "            .' .--.    \"-.(O)_"
+  echo -e "'-.__.-'\"'=:|  ,  _)_ \__ . c\'-.."
+  echo -e "             ''------'---''---'-\""
+  echo -e "${NC}"
 }
 
 # --- 2. Main Script Logic ---
@@ -47,13 +47,25 @@ no_modify_path=false
 
 # Argument Parsing
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -h|--help) usage; exit 0 ;;
-        -v|--version) requested_version="${2:-}"; shift 2 ;;
-        -b|--binary) binary_path="${2:-}"; shift 2 ;;
-        --no-modify-path) no_modify_path=true; shift ;;
-        *) shift ;;
-    esac
+  case "$1" in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  -v | --version)
+    requested_version="${2:-}"
+    shift 2
+    ;;
+  -b | --binary)
+    binary_path="${2:-}"
+    shift 2
+    ;;
+  --no-modify-path)
+    no_modify_path=true
+    shift
+    ;;
+  *) shift ;;
+  esac
 done
 
 INSTALL_DIR=$HOME/.godo/bin
@@ -63,48 +75,48 @@ log "System: ${GREEN}$(uname -s)/$(uname -m)${NC}"
 
 # Version and Asset Resolution
 if [ -n "$binary_path" ]; then
-    log "Mode: ${ORANGE}Local Binary Installation${NC}"
-    specific_version="local-dev"
+  log "Mode: ${ORANGE}Local Binary Installation${NC}"
+  specific_version="local-dev"
 else
-    log "Mode: ${GREEN}Remote Download${NC}"
-    
-    # OS/Arch Detection
-    os=$(uname -s | tr '[:upper:]' '[:lower:]')
-    arch=$(uname -m)
-    [[ "$arch" == "x86_64" || "$arch" == "amd64" ]] && arch="amd64"
-    [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && arch="arm64"
-    filename="${APP}_${os}_${arch}.tar.gz"
+  log "Mode: ${GREEN}Remote Download${NC}"
 
-    log "Resolving latest version from GitHub..."
-    # Fetches first release found (handles pre-releases/snapshots)
-    release_data=$(curl -s "https://api.github.com/repos/$REPO/releases" | grep -m 1 '"tag_name":' || true)
-    
-    if [ -z "$release_data" ]; then
-        echo -e "${RED}Error: No releases found at https://github.com/$REPO/releases${NC}"
-        exit 1
-    fi
+  # OS/Arch Detection
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  arch=$(uname -m)
+  [[ "$arch" == "x86_64" || "$arch" == "amd64" ]] && arch="amd64"
+  [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && arch="arm64"
+  filename="${APP}_${os}_${arch}.tar.gz"
 
-    specific_version=$(echo "$release_data" | sed -E 's/.*"([^"]+)".*/\1/')
-    url="https://github.com/$REPO/releases/download/$specific_version/$filename"
-    log "Selected Version: ${CYAN}$specific_version${NC}"
+  log "Resolving latest version from GitHub..."
+  # Fetches first release found (handles pre-releases/snapshots)
+  release_data=$(curl -s "https://api.github.com/repos/$REPO/releases" | grep -m 1 '"tag_name":' || true)
+
+  if [ -z "$release_data" ]; then
+    echo -e "${RED}Error: No releases found at https://github.com/$REPO/releases${NC}"
+    exit 1
+  fi
+
+  specific_version=$(echo "$release_data" | sed -E 's/.*"([^"]+)".*/\1/')
+  url="https://github.com/$REPO/releases/download/$specific_version/$filename"
+  log "Selected Version: ${CYAN}$specific_version${NC}"
 fi
 
 # Installation Execution
 if [ -n "$binary_path" ]; then
-    cp "$binary_path" "$INSTALL_DIR/$APP"
+  cp "$binary_path" "$INSTALL_DIR/$APP"
 else
-    log "Downloading: ${MUTED}$url${NC}"
-    tmp_dir=$(mktemp -d)
-    if ! curl -# -L -f -o "$tmp_dir/$filename" "$url"; then
-        echo -e "${RED}Error: Download failed. The file may not exist for your architecture.${NC}"
-        rm -rf "$tmp_dir"
-        exit 1
-    fi
-
-    log "Extracting assets..."
-    tar -xzf "$tmp_dir/$filename" -C "$tmp_dir"
-    mv "$tmp_dir/$APP" "$INSTALL_DIR/" 2>/dev/null || mv "$tmp_dir/godo.exe" "$INSTALL_DIR/" 2>/dev/null
+  log "Downloading: ${MUTED}$url${NC}"
+  tmp_dir=$(mktemp -d)
+  if ! curl -# -L -f -o "$tmp_dir/$filename" "$url"; then
+    echo -e "${RED}Error: Download failed. The file may not exist for your architecture.${NC}"
     rm -rf "$tmp_dir"
+    exit 1
+  fi
+
+  log "Extracting assets..."
+  tar -xzf "$tmp_dir/$filename" -C "$tmp_dir"
+  mv "$tmp_dir/$APP" "$INSTALL_DIR/" 2>/dev/null || mv "$tmp_dir/godo.exe" "$INSTALL_DIR/" 2>/dev/null
+  rm -rf "$tmp_dir"
 fi
 
 chmod +x "${INSTALL_DIR}/$APP"
@@ -114,39 +126,61 @@ log "Downloading identity files..."
 mkdir -p "$HOME/.godo/content/identity"
 files=$(curl -s "https://api.github.com/repos/$REPO/contents/content/identity" | grep '"name":' | cut -d '"' -f 4 | grep '\.md$' || true)
 if [ -n "$files" ]; then
-    for file in $files; do
-        log "Fetching $file..."
-        curl -s -L -o "$HOME/.godo/content/identity/$file" "https://raw.githubusercontent.com/$REPO/main/content/identity/$file" || true
-    done
+  for file in $files; do
+    log "Fetching $file..."
+    curl -s -L -o "$HOME/.godo/content/identity/$file" "https://raw.githubusercontent.com/$REPO/main/content/identity/$file" || true
+  done
 fi
 
 log "Downloading skills files..."
 mkdir -p "$HOME/.godo/content/skills"
 files=$(curl -s "https://api.github.com/repos/$REPO/contents/content/skills" | grep '"name":' | cut -d '"' -f 4 | grep '\.md$' || true)
 if [ -n "$files" ]; then
-    for file in $files; do
-        log "Fetching $file..."
-        curl -s -L -o "$HOME/.godo/content/skills/$file" "https://raw.githubusercontent.com/$REPO/main/content/skills/$file" || true
-    done
+  for file in $files; do
+    log "Fetching $file..."
+    curl -s -L -o "$HOME/.godo/content/skills/$file" "https://raw.githubusercontent.com/$REPO/main/content/skills/$file" || true
+  done
 fi
 
 # Shell Path Configuration
 if [ "$no_modify_path" = "false" ]; then
-    log "Configuring shell path..."
-    
-    shell_config=""
-    case $(basename "$SHELL") in
-        zsh)  shell_config="$HOME/.zshrc" ;;
-        bash) shell_config="$HOME/.bashrc" ;;
-        fish) shell_config="$HOME/.config/fish/config.fish" ;;
-    esac
+  log "Configuring shell path..."
 
-    if [ -n "$shell_config" ] && [ -f "$shell_config" ]; then
-        if ! grep -q "$INSTALL_DIR" "$shell_config"; then
-            echo -e "\n# Godo\nexport PATH=\"$INSTALL_DIR:\$PATH\"" >> "$shell_config"
-            log "Permanent path added to $shell_config."
-        fi
+  shell_config=""
+  case $(basename "$SHELL") in
+  zsh) shell_config="$HOME/.zshrc" ;;
+  bash) shell_config="$HOME/.bashrc" ;;
+  fish) shell_config="$HOME/.config/fish/config.fish" ;;
+  esac
+
+  if [ -n "$shell_config" ] && [ -f "$shell_config" ]; then
+    if ! grep -q "$INSTALL_DIR" "$shell_config"; then
+      echo -e "\n# Godo\nexport PATH=\"$INSTALL_DIR:\$PATH\"" >>"$shell_config"
+      log "Permanent path added to $shell_config."
     fi
+  fi
+
+fi
+
+# desktop entry
+if [[ "$(uname -s)" == "Linux" ]]; then
+  log "Setting up desktop..."
+
+  DESKTOP_DIR="$HOME/.local/share/applications"
+  DESKTOP_FILE="$DESKTOP_DIR/godo.desktop"
+
+  mkdir -p "$DESKTOP_DIR"
+
+  cat >"$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Name=Godo
+Comment=Run Godo CLI
+Exec=$HOME/.godo/bin/godo
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Development;Utility;
+EOF
 
 fi
 
