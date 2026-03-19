@@ -136,15 +136,21 @@ func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
 	if delta.JSON.ExtraFields == nil {
 		return ""
 	}
-	f, ok := delta.JSON.ExtraFields["reasoning"]
-	if !ok {
-		return ""
+	for _, key := range []string{"reasoning_content", "reasoning"} {
+		f, ok := delta.JSON.ExtraFields[key]
+		if !ok {
+			return ""
+		}
+		var r string
+		if err := json.Unmarshal([]byte(f.Raw()), &r); err != nil {
+			slog.Error("failed to unmarshal reasoning", "key", key, "err", err)
+			continue
+		}
+		if r != "" {
+			return r
+		}
 	}
-	var r string
-	if err := json.Unmarshal([]byte(f.Raw()), &r); err != nil {
-		slog.Error("failed to unmarshal reasoning", "err", err)
-	}
-	return r
+	return ""
 }
 
 func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
