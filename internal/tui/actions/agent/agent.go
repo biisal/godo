@@ -139,7 +139,7 @@ func deltaReasoning(delta openai.ChatCompletionChunkChoiceDelta) string {
 	for _, key := range []string{"reasoning_content", "reasoning"} {
 		f, ok := delta.JSON.ExtraFields[key]
 		if !ok {
-			return ""
+			continue
 		}
 		var r string
 		if err := json.Unmarshal([]byte(f.Raw()), &r); err != nil {
@@ -177,6 +177,7 @@ func (b *Bot) agentAPICall(refresh ...bool) (bool, error) {
 		thiking := true
 
 		thinkStartTime := time.Now()
+		bus.EmitState(agentModel.StateThinking)
 		for stream.Next() {
 			chunk := stream.Current()
 			raw, _ := json.Marshal(chunk)
